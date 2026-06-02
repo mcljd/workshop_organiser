@@ -8,6 +8,7 @@ import {
   type WizardAnswers,
 } from '../generate'
 import { analyzeFloorPlan } from '../vision'
+import { seedItemDates } from '../manager'
 
 interface Props {
   onClose: () => void
@@ -77,12 +78,14 @@ export function Onboarding({ onClose, onBuild }: Props) {
           det.floorWidth,
           det.floorHeight,
         )
+        const merged = [...det.items, ...boats]
+        seedItemDates(merged)
         onBuild({
           version: 2,
           name: answers.name.trim() || 'My Workshop',
           floor: { imageDataUrl: floorImage, width: det.floorWidth, height: det.floorHeight },
           zones: det.zones,
-          items: [...det.items, ...boats],
+          items: merged,
         })
         return
       } catch {

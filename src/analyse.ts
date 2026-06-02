@@ -1,4 +1,5 @@
 import type { FloorItem, WorkshopState, Zone } from './types'
+import { dueLabel, dueState } from './manager'
 
 // A lightweight, real heuristic analysis of a layout. It computes genuine
 // geometry (overlaps, which zone each item sits in, aisle obstructions) and
@@ -131,6 +132,28 @@ export function analyse(state: WorkshopState): Analysis {
     })
   }
 
+  // --- Due dates: overdue and due-today jobs need attention. ---
+  let overdueCount = 0
+  for (const item of items) {
+    const ds = dueState(item)
+    if (ds === 'overdue') {
+      overdueCount++
+      insights.push({
+        id: `due-${item.id}`,
+        severity: 'bad',
+        message: `${item.name} is ${dueLabel(item).toLowerCase()} — prioritise it.`,
+        itemId: item.id,
+      })
+    } else if (ds === 'today') {
+      insights.push({
+        id: `due-${item.id}`,
+        severity: 'warn',
+        message: `${item.name} is due today.`,
+        itemId: item.id,
+      })
+    }
+  }
+
   // --- Utilisation: footprint vs usable floor. ---
   const usedArea = items.reduce((sum, i) => sum + i.width * i.height, 0)
   const utilisation = Math.min(1, usedArea / (floor.width * floor.height))
@@ -139,6 +162,7 @@ export function analyse(state: WorkshopState): Analysis {
   let score = 100
   score -= overlapping.size * 12
   score -= aisleBlocked * 10
+  score -= overdueCount * 8
   score -= items.filter((i) => i.status === 'blocked').length * 4
   score = Math.max(0, Math.min(100, Math.round(score)))
 

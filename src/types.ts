@@ -22,6 +22,10 @@ export interface FloorItem {
   /** How the item is drawn on the floor. */
   shape: ItemShape
   notes?: string
+  /** When the item arrived on site (ISO). Drives "days in yard". */
+  arrivedAt?: string
+  /** Target completion / collection / launch date (ISO date). */
+  dueDate?: string
 }
 
 /** A named area of the floor: dry dock, paint bay, slipway, aisle… */

@@ -1,5 +1,6 @@
 import type { FloorItem, ItemStatus, WorkshopState, Zone } from './types'
 import { newId } from './storage'
+import { seedItemDates } from './manager'
 
 export type SpaceType = 'boatyard' | 'garage' | 'warehouse' | 'other'
 export type SpaceSize = 'small' | 'medium' | 'large'
@@ -52,6 +53,7 @@ export function generateWorkshop(a: WizardAnswers): WorkshopState {
   ]
 
   const items = layoutItems(a.count, noun, isBoat, w, h)
+  seedItemDates(items)
 
   return {
     version: 2,

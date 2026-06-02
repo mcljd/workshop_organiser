@@ -1,5 +1,6 @@
 import type { FloorItem, ItemStatus } from '../types'
 import { STATUS_LABELS } from '../types'
+import { dueLabel, dueState, dwellDays } from '../manager'
 
 interface Props {
   item: FloorItem | null
@@ -80,6 +81,30 @@ export function Sidebar({ item, itemCount, onChange, onDelete }: Props) {
           onChange={(e) => onChange({ rotation: Number(e.target.value) })}
         />
       </label>
+
+      <div className="field-row">
+        <label className="field">
+          <span>Due date</span>
+          <input
+            type="date"
+            value={item.dueDate ? item.dueDate.slice(0, 10) : ''}
+            onChange={(e) =>
+              onChange({
+                dueDate: e.target.value ? new Date(e.target.value).toISOString() : undefined,
+              })
+            }
+          />
+        </label>
+        <div className="field">
+          <span>On site</span>
+          <div className="stat-line">
+            <strong>{dwellDays(item)} days</strong>
+            {item.dueDate && (
+              <span className={`due-pill due-${dueState(item)}`}>{dueLabel(item)}</span>
+            )}
+          </div>
+        </div>
+      </div>
 
       <label className="field">
         <span>Notes</span>

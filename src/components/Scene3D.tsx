@@ -4,6 +4,7 @@ import { Billboard, Grid, OrbitControls, RoundedBox, Text } from '@react-three/d
 import * as THREE from 'three'
 import type { FloorItem, FloorPlan, Zone } from '../types'
 import { STATUS_COLORS } from '../types'
+import { dueState } from '../manager'
 
 interface Props {
   floor: FloorPlan
@@ -254,6 +255,8 @@ function Item3D({
   const cx = item.x - W / 2
   const cz = item.y - H / 2
   const hullH = Math.max(16, item.height * 0.5)
+  const overdue = dueState(item) === 'overdue'
+  const r = Math.max(item.width, item.height)
 
   function onDown(e: ThreeEvent<PointerEvent>) {
     e.stopPropagation()
@@ -281,6 +284,14 @@ function Item3D({
         <Door length={item.width} color={color} />
       ) : (
         <Vehicle length={item.width} width={item.height} height={hullH} color={color} />
+      )}
+
+      {/* Overdue marker: a red ring that's always visible. */}
+      {overdue && item.shape !== 'door' && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.1, 0]}>
+          <ringGeometry args={[r * 0.74, r * 0.84, 48]} />
+          <meshBasicMaterial color="#ef4444" transparent opacity={0.95} />
+        </mesh>
       )}
 
       {/* Selection / hover ring on the ground. */}

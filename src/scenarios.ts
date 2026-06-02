@@ -1,4 +1,5 @@
 import type { FloorItem, WorkshopState, Zone } from './types'
+import { seedItemDates } from './manager'
 
 // Pre-built demo layouts so the app is instantly useful and tells the story
 // without any setup. Coordinates are in world units on the floor (x right,
@@ -124,9 +125,13 @@ export interface Scenario {
   build: () => WorkshopState
 }
 
-// Deep-clone on build so each load is a fresh, independently-editable copy.
-const clone = (s: WorkshopState) => (): WorkshopState =>
-  JSON.parse(JSON.stringify(s)) as WorkshopState
+// Deep-clone on build so each load is a fresh, independently-editable copy,
+// with realistic arrival/due dates seeded for the manager view.
+const clone = (s: WorkshopState) => (): WorkshopState => {
+  const copy = JSON.parse(JSON.stringify(s)) as WorkshopState
+  seedItemDates(copy.items)
+  return copy
+}
 
 export const SCENARIOS: Scenario[] = [
   { key: 'boatyard', label: 'Boatyard', build: clone(boatyard) },

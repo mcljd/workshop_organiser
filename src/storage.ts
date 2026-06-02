@@ -1,5 +1,6 @@
 import type { WorkshopState } from './types'
 import { defaultScenario } from './scenarios'
+import { seedItemDates } from './manager'
 
 const STORAGE_KEY = 'workshop-organiser:state:v2'
 
@@ -20,6 +21,7 @@ export function loadState(): WorkshopState {
       // Backfill anything an older save might be missing.
       parsed.zones ??= []
       for (const item of parsed.items) item.shape ??= 'box'
+      seedItemDates(parsed.items) // backfill dates for older saves
       return parsed
     }
   } catch {

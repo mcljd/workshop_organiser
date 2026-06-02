@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { Toolbar } from './components/Toolbar'
 import { InsightsPanel } from './components/InsightsPanel'
+import { ManagerPanel } from './components/ManagerPanel'
 import { Onboarding } from './components/Onboarding'
 import { analyse } from './analyse'
 import { optimiseLayout } from './optimise'
@@ -102,6 +103,7 @@ export default function App() {
       rotation: 0,
       status: 'incoming',
       shape: isBoat ? 'boat' : 'box',
+      arrivedAt: new Date().toISOString(),
     }
     setState((s) => ({ ...s, items: [...s.items, item] }))
     setSelectedId(item.id)
@@ -255,6 +257,8 @@ export default function App() {
         </div>
 
         <aside className="panel">
+          <ManagerPanel state={state} selectedId={selectedId} onSelect={setSelectedId} />
+          <div className="panel-divider" />
           <InsightsPanel analysis={analysis} onSelectItem={setSelectedId} onOptimise={optimise} />
           <div className="panel-divider" />
           <h3 className="panel-h">Details</h3>
