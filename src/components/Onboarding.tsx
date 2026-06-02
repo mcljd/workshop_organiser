@@ -114,7 +114,7 @@ export function Onboarding({ onClose, onBuild }: Props) {
               <span>3 · Get your 3D view</span>
             </div>
             <div className="wizard-actions">
-              <button className="primary" onClick={() => setStep(1)}>
+              <button className="primary" autoFocus onClick={() => setStep(1)}>
                 Build from my space
               </button>
               <button className="ghost" onClick={onClose}>

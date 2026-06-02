@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Scene3D } from './components/Scene3D'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { Toolbar } from './components/Toolbar'
 import { InsightsPanel } from './components/InsightsPanel'
@@ -16,6 +15,12 @@ import {
   parseImportedState,
   saveState,
 } from './storage'
+
+// The 3D engine (Three.js + R3F) is heavy, so load it on demand — the toolbar,
+// panel and wizard render immediately while it streams in.
+const Scene3D = lazy(() =>
+  import('./components/Scene3D').then((m) => ({ default: m.Scene3D })),
+)
 
 const SEEN_KEY = 'workshop-organiser:onboarded'
 
@@ -230,14 +235,20 @@ export default function App() {
           role="application"
           aria-label="Interactive 3D workshop floor. Drag items to move them; use the side panel and arrow keys to edit."
         >
-          <Scene3D
-            floor={state.floor}
-            zones={state.zones}
-            items={state.items}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            onMoveItem={moveItem}
-          />
+          <Suspense
+            fallback={
+              <div className="canvas-loading">Loading 3D workshop…</div>
+            }
+          >
+            <Scene3D
+              floor={state.floor}
+              zones={state.zones}
+              items={state.items}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              onMoveItem={moveItem}
+            />
+          </Suspense>
           <div className="canvas-hint">
             Drag items to move • Drag empty space to orbit • Scroll to zoom • Del to remove
           </div>

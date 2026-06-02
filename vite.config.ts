@@ -10,4 +10,20 @@ const singleFile = process.env.SINGLEFILE === '1'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), ...(singleFile ? [viteSingleFile()] : [])],
+  build: {
+    // Split the heavy 3D libraries into their own chunk so they cache across
+    // deploys and the app shell loads first. (Skipped for the single-file
+    // embed build, which must stay one file.)
+    rollupOptions: singleFile
+      ? {}
+      : {
+          output: {
+            manualChunks: {
+              three: ['three'],
+              r3f: ['@react-three/fiber', '@react-three/drei'],
+              react: ['react', 'react-dom'],
+            },
+          },
+        },
+  },
 })
