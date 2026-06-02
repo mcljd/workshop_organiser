@@ -10,7 +10,11 @@ import type { WorkshopState } from './types'
 // with no sign-in. Add auth + per-site ownership before real production use.
 
 const SUPABASE_URL = 'https://zftoqqrqsxctehltebad.supabase.co'
-const SUPABASE_KEY = 'sb_publishable_Um1d_4KzZJys2WSjLgc4cQ_JrgFUcPo'
+// Legacy anon JWT key — widest compatibility with this project's REST/Realtime
+// (the role resolves to `anon`, which the table's RLS policies allow). Safe to
+// ship in the client; it only grants what the public RLS policies permit.
+const SUPABASE_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmdG9xcXJxc3hjdGVobHRlYmFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NzcxODIsImV4cCI6MjA5NDE1MzE4Mn0.T-gUL06oNQ7dfMJEA2zOVShcM9cwqsV6oH9CbQgi6j8'
 
 /** Distinguishes this tab's own writes from genuine remote updates. */
 export const CLIENT_ID = Math.random().toString(36).slice(2)

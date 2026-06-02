@@ -527,8 +527,8 @@ export default function App() {
         setState(s)
       })
       logEvent('edit', 'Went live — sharing this site')
-    } catch {
-      alert('Could not create a live site. Check your connection and try again.')
+    } catch (e) {
+      alert(`Could not create a live site: ${e instanceof Error ? e.message : 'unknown error'}`)
     } finally {
       setAiBusy(null)
     }
