@@ -5,6 +5,7 @@ interface Props {
   lead?: string
   defaultLabels?: string
   suggested?: string[]
+  presets?: { name: string; labels: string }[]
   onRun: (dataUrl: string, labels: string[]) => void
   onClose: () => void
 }
@@ -17,6 +18,7 @@ export function SmartFindDialog({
   lead = 'Type what to look for and pick a photo. A zero-shot AI model finds those things — even ones it was never specifically trained on. Runs on your device; the model downloads once (no account, no cost).',
   defaultLabels = 'boat, trailer, car, forklift',
   suggested = DEFAULT_SUGGESTED,
+  presets = [],
   onRun,
   onClose,
 }: Props) {
@@ -51,6 +53,17 @@ export function SmartFindDialog({
           <div className="wizard-kicker">Smart find · on-device AI</div>
           <h1>{title}</h1>
           <p className="lead">{lead}</p>
+
+          {presets.length > 0 && (
+            <div className="preset-row">
+              <span className="preset-label">Presets:</span>
+              {presets.map((p) => (
+                <button key={p.name} className="preset" onClick={() => setLabels(p.labels)}>
+                  {p.name}
+                </button>
+              ))}
+            </div>
+          )}
 
           <label className="wfield">
             <span>Look for (comma-separated)</span>

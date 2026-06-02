@@ -1162,6 +1162,74 @@ button.danger:hover {
   color: var(--muted);
 }
 
+/* ---- Presets ---- */
+.preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.preset-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.preset {
+  background: #f3e8ff;
+  border: 1px solid #e9d5ff;
+  color: #7c3aed;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 11px;
+  border-radius: 999px;
+}
+
+.preset:hover {
+  background: #ede9fe;
+}
+
+/* ---- Scale calibration ---- */
+.scale-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.9);
+  color: #fff;
+  font-size: 12px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.scale-apply {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.scale-apply input {
+  width: 80px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: none;
+}
+
+.scale-apply .primary {
+  padding: 4px 12px;
+  background: var(--violet);
+  border-color: var(--violet);
+}
+
+.review-foot-opts .ghost.on {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
 /* ---- Smart find suggestions ---- */
 .suggest-row {
   display: flex;

@@ -13,6 +13,7 @@ interface Props {
   onFindObjects: (dataUrl: string) => void
   onSmartFind: () => void
   onSmartScan: () => void
+  onScanEverything: () => void
   onEditZones: () => void
   onDetect: () => void
   hasPlan: boolean
@@ -32,6 +33,7 @@ export function Toolbar({
   onFindObjects,
   onSmartFind,
   onSmartScan,
+  onScanEverything,
   onEditZones,
   onDetect,
   hasPlan,
@@ -113,6 +115,9 @@ export function Toolbar({
         </button>
         <button className="accent" onClick={onNewFromSpace}>
           ✦ Build from my space
+        </button>
+        <button className="accent" onClick={onScanEverything} title="One overhead photo → buildings + objects, reviewed by you">
+          ✨ Scan everything
         </button>
         <button className="ghost" onClick={() => aerialInput.current?.click()} title="Detect buildings from an aerial/satellite image">
           🛰 Scan aerial

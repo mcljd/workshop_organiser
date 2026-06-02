@@ -8,7 +8,7 @@ import { BuildingReview } from './components/BuildingReview'
 import { ZoneEditor } from './components/ZoneEditor'
 import { AddItemDialog } from './components/AddItemDialog'
 import { SmartFindDialog } from './components/SmartFindDialog'
-import { smartFind } from './smartFind'
+import { smartFind, type FoundObject } from './smartFind'
 import { analyse } from './analyse'
 import { optimiseLayout } from './optimise'
 import { analyzeFloorPlan } from './vision'
@@ -34,6 +34,20 @@ const Scene3D = lazy(() =>
 
 const SEEN_KEY = 'workshop-organiser:onboarded'
 
+// Saved label sets so Smart find/scan is one tap per industry.
+const OBJECT_PRESETS = [
+  { name: 'Boatyard', labels: 'boat, trailer, car, forklift' },
+  { name: 'Car lot', labels: 'car, van, truck, trailer' },
+  { name: 'Plant hire', labels: 'excavator, forklift, generator, container, trailer' },
+  { name: 'Warehouse', labels: 'pallet, forklift, truck, shipping container' },
+]
+const BUILDING_PRESETS = [
+  { name: 'Sheds', labels: 'shed, building, unit' },
+  { name: 'Warehouse', labels: 'warehouse, building, unit' },
+  { name: 'Mixed site', labels: 'shed, building, warehouse, hangar, marquee' },
+]
+const STRUCTURE_LABELS = ['shed', 'building', 'warehouse', 'unit', 'hangar']
+
 export default function App() {
   const [state, setState] = useState<WorkshopState>(() => loadState())
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -41,7 +55,8 @@ export default function App() {
   const [scan, setScan] = useState<BuildingScan | null>(null)
   const [showAdd, setShowAdd] = useState(false)
   const [showZones, setShowZones] = useState(false)
-  const [smartMode, setSmartMode] = useState<'objects' | 'buildings' | null>(null)
+  const [smartMode, setSmartMode] = useState<'objects' | 'buildings' | 'everything' | null>(null)
+  const [pendingObjects, setPendingObjects] = useState<FoundObject[]>([])
   const [aiBusy, setAiBusy] = useState<string | null>(null)
 
   // Auto-save on every change (debounced a touch to avoid thrashing storage).
@@ -190,26 +205,44 @@ export default function App() {
     }))
     setScan(null)
     setSelectedId(null)
+    const now0 = new Date().toISOString()
 
-    // Optionally run the AI model on the same overhead shot to place objects.
-    let items: FloorItem[] = []
+    // Objects already found by "Scan everything" land in the kept sheds.
+    let items: FloorItem[] = pendingObjects.map((o) => ({
+      id: newId(),
+      name: o.label.replace(/^./, (c) => c.toUpperCase()),
+      x: o.cx * FW,
+      y: o.cy * FH,
+      width: Math.max(40, o.w * FW),
+      height: Math.max(28, o.h * FH),
+      rotation: 0,
+      status: 'incoming' as const,
+      shape: o.shape,
+      arrivedAt: now0,
+    }))
+    setPendingObjects([])
+
+    // Optionally also run the COCO model on the same overhead shot.
     if (alsoObjects) {
       setAiBusy('Finding boats & vehicles in the photo…')
       try {
         const res = await detectObjectsInPhoto(imageDataUrl)
         const now = new Date().toISOString()
-        items = res.objects.map((o) => ({
-          id: newId(),
-          name: o.name,
-          x: o.cx * FW,
-          y: o.cy * FH,
-          width: Math.max(40, o.w * FW),
-          height: Math.max(28, o.h * FH),
-          rotation: 0,
-          status: 'incoming' as const,
-          shape: o.shape,
-          arrivedAt: now,
-        }))
+        items = [
+          ...items,
+          ...res.objects.map((o) => ({
+            id: newId(),
+            name: o.name,
+            x: o.cx * FW,
+            y: o.cy * FH,
+            width: Math.max(40, o.w * FW),
+            height: Math.max(28, o.h * FH),
+            rotation: 0,
+            status: 'incoming' as const,
+            shape: o.shape,
+            arrivedAt: now,
+          })),
+        ]
       } catch {
         alert('Buildings added, but the object model could not load (needs internet on first use).')
       } finally {
@@ -371,6 +404,38 @@ export default function App() {
     }
   }
 
+  // One overhead photo → buildings AND objects, both into the review screen.
+  async function runScanEverything(dataUrl: string, objectLabels: string[]) {
+    setSmartMode(null)
+    setAiBusy('Finding buildings & objects… (first run downloads the model)')
+    try {
+      const bRes = await smartFind(dataUrl, STRUCTURE_LABELS)
+      const buildings = bRes.objects
+        .map((o, i) => ({
+          id: `s${i}`,
+          x: Math.max(0, o.cx - o.w / 2),
+          y: Math.max(0, o.cy - o.h / 2),
+          w: o.w,
+          h: o.h,
+          score: o.score,
+          name: o.label.replace(/^./, (c) => c.toUpperCase()),
+          keep: o.score >= 0.2,
+        }))
+        .sort((a, b) => b.score - a.score)
+      const oRes = await smartFind(dataUrl, objectLabels)
+      setPendingObjects(oRes.objects)
+      if (buildings.length === 0 && oRes.objects.length === 0) {
+        alert('The model found nothing matching. Try different words.')
+        return
+      }
+      setScan({ imageDataUrl: dataUrl, aspect: bRes.aspect, buildings })
+    } catch {
+      alert('Could not load the smart model. It downloads on first use, so this needs internet.')
+    } finally {
+      setAiBusy(null)
+    }
+  }
+
   async function runSmartFind(dataUrl: string, labels: string[]) {
     setSmartMode(null)
     setAiBusy('Loading smart model & searching… (first run downloads it)')
@@ -437,6 +502,7 @@ export default function App() {
         onFindObjects={findObjectsAI}
         onSmartFind={() => setSmartMode('objects')}
         onSmartScan={() => setSmartMode('buildings')}
+        onScanEverything={() => setSmartMode('everything')}
         onEditZones={() => setShowZones(true)}
         onDetect={detectFromPlan}
         hasPlan={!!state.floor.imageDataUrl}
@@ -518,7 +584,7 @@ export default function App() {
         />
       )}
       {smartMode === 'objects' && (
-        <SmartFindDialog onRun={runSmartFind} onClose={() => setSmartMode(null)} />
+        <SmartFindDialog presets={OBJECT_PRESETS} onRun={runSmartFind} onClose={() => setSmartMode(null)} />
       )}
       {smartMode === 'buildings' && (
         <SmartFindDialog
@@ -526,7 +592,18 @@ export default function App() {
           lead="Pick an aerial/overhead photo and type the structures to look for. The on-device AI detects them, then you review and correct — and it learns from your edits."
           defaultLabels="shed, building, warehouse, unit"
           suggested={['shed', 'building', 'warehouse', 'unit', 'hangar', 'workshop', 'marquee']}
+          presets={BUILDING_PRESETS}
           onRun={runSmartScan}
+          onClose={() => setSmartMode(null)}
+        />
+      )}
+      {smartMode === 'everything' && (
+        <SmartFindDialog
+          title="Scan everything"
+          lead="Pick one overhead photo. The AI finds the buildings automatically, plus the objects you list below — all into the review screen. Buildings become sheds; objects land inside them."
+          defaultLabels="boat, trailer, car, forklift"
+          presets={OBJECT_PRESETS}
+          onRun={runScanEverything}
           onClose={() => setSmartMode(null)}
         />
       )}

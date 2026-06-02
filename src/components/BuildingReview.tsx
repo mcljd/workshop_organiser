@@ -17,6 +17,9 @@ export function BuildingReview({ scan, onConfirm, onCancel }: Props) {
   const [buildings, setBuildings] = useState<Building[]>(scan.buildings)
   const [metres, setMetres] = useState(60)
   const [alsoObjects, setAlsoObjects] = useState(true)
+  const [scaleMode, setScaleMode] = useState(false)
+  const [scalePts, setScalePts] = useState<{ x: number; y: number }[]>([])
+  const [scaleDist, setScaleDist] = useState('')
   const svgRef = useRef<SVGSVGElement | null>(null)
   const draw = useRef<{ x: number; y: number } | null>(null)
   const [draft, setDraft] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
@@ -42,9 +45,26 @@ export function BuildingReview({ scan, onConfirm, onCancel }: Props) {
   }
 
   function onDown(e: React.PointerEvent) {
+    if (scaleMode) {
+      const p = toNorm(e)
+      setScalePts((prev) => (prev.length >= 2 ? [p] : [...prev, p]))
+      return
+    }
     if ((e.target as Element).getAttribute('data-rect')) return // clicking a rect toggles it
     draw.current = toNorm(e)
     svgRef.current?.setPointerCapture(e.pointerId)
+  }
+
+  function applyScale() {
+    const dm = Number(scaleDist)
+    if (scalePts.length < 2 || !dm) return
+    const FW = 1200
+    const FH = FW / scan.aspect
+    const dx = (scalePts[1].x - scalePts[0].x) * FW
+    const dy = (scalePts[1].y - scalePts[0].y) * FH
+    const dw = Math.hypot(dx, dy)
+    if (dw > 0) setMetres(Math.round((FW * dm) / dw))
+    setScaleMode(false)
   }
   function onMove(e: React.PointerEvent) {
     if (!draw.current) return
@@ -141,7 +161,42 @@ export function BuildingReview({ scan, onConfirm, onCancel }: Props) {
                   strokeWidth={0.004}
                 />
               )}
+              {scalePts.length === 2 && (
+                <line
+                  x1={scalePts[0].x}
+                  y1={scalePts[0].y}
+                  x2={scalePts[1].x}
+                  y2={scalePts[1].y}
+                  stroke="#dc2626"
+                  strokeWidth={0.005}
+                />
+              )}
+              {scalePts.map((p, i) => (
+                <circle key={i} cx={p.x} cy={p.y} r={0.008} fill="#dc2626" />
+              ))}
             </svg>
+            {scaleMode && (
+              <div className="scale-hint">
+                {scalePts.length < 2
+                  ? `Tap point ${scalePts.length + 1} of 2 on a known distance`
+                  : 'Enter the real distance between the points'}
+                {scalePts.length === 2 && (
+                  <span className="scale-apply">
+                    <input
+                      type="number"
+                      min={0.1}
+                      step={0.1}
+                      placeholder="metres"
+                      value={scaleDist}
+                      onChange={(e) => setScaleDist(e.target.value)}
+                    />
+                    <button className="primary" onClick={applyScale}>
+                      Set
+                    </button>
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="review-list">
@@ -183,6 +238,16 @@ export function BuildingReview({ scan, onConfirm, onCancel }: Props) {
               />
               m
             </label>
+            <button
+              className={`ghost ${scaleMode ? 'on' : ''}`}
+              onClick={() => {
+                setScaleMode((m) => !m)
+                setScalePts([])
+              }}
+              title="Tap two points of a known real distance to set the scale"
+            >
+              📏 {scaleMode ? 'Cancel scale' : 'Set scale'}
+            </button>
             <label className="review-check">
               <input
                 type="checkbox"
