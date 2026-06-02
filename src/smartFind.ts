@@ -1,4 +1,5 @@
 import type { ItemShape } from './types'
+import { prepImage } from './imageprep'
 
 // Zero-shot object detection in the browser via Transformers.js (OWL-ViT).
 // Unlike the fixed-class COCO model, the user types *what to look for* —
@@ -18,6 +19,8 @@ export interface FoundObject {
 export interface SmartScan {
   aspect: number
   objects: FoundObject[]
+  /** The image actually analysed (letterbox borders trimmed). */
+  imageDataUrl: string
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -41,35 +44,26 @@ function shapeFor(label: string): ItemShape {
 }
 
 export async function smartFind(dataUrl: string, labels: string[]): Promise<SmartScan> {
-  const dims = await imageDims(dataUrl)
+  // Trim letterbox borders so detections (and the floor image) line up.
+  const prepped = await prepImage(dataUrl, 768)
   const detector = await getDetector()
-  // OWL-ViT expects candidate labels phrased as "a photo of a X".
   const candidates = labels.map((l) => l.trim()).filter(Boolean)
-  const raw = await detector(dataUrl, candidates, { threshold: 0.1, topk: 40 })
+  const raw = await detector(prepped.dataUrl, candidates, { threshold: 0.1, topk: 40 })
   const objects: FoundObject[] = []
   for (const r of raw) {
     const b = r.box as { xmin: number; ymin: number; xmax: number; ymax: number }
-    const w = (b.xmax - b.xmin) / dims.w
-    const h = (b.ymax - b.ymin) / dims.h
+    const w = (b.xmax - b.xmin) / prepped.W
+    const h = (b.ymax - b.ymin) / prepped.H
     if (w <= 0 || h <= 0) continue
     objects.push({
       label: r.label,
       shape: shapeFor(r.label),
-      cx: (b.xmin + b.xmax) / 2 / dims.w,
-      cy: (b.ymin + b.ymax) / 2 / dims.h,
+      cx: (b.xmin + b.xmax) / 2 / prepped.W,
+      cy: (b.ymin + b.ymax) / 2 / prepped.H,
       w,
       h,
       score: r.score,
     })
   }
-  return { aspect: dims.w / dims.h, objects }
-}
-
-function imageDims(src: string): Promise<{ w: number; h: number }> {
-  return new Promise((resolve, reject) => {
-    const im = new Image()
-    im.onload = () => resolve({ w: im.naturalWidth, h: im.naturalHeight })
-    im.onerror = reject
-    im.src = src
-  })
+  return { aspect: prepped.W / prepped.H, objects, imageDataUrl: prepped.dataUrl }
 }

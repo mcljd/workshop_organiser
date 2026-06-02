@@ -440,7 +440,7 @@ export default function App() {
         alert('The model found no matching structures. Try words like "shed, building, warehouse".')
         return
       }
-      setScan({ imageDataUrl: dataUrl, aspect: res.aspect, buildings })
+      setScan({ imageDataUrl: res.imageDataUrl, aspect: res.aspect, buildings })
     } catch {
       alert('Could not load the smart model. It downloads on first use, so this needs internet.')
     } finally {
@@ -466,13 +466,14 @@ export default function App() {
           keep: o.score >= 0.2,
         }))
         .sort((a, b) => b.score - a.score)
-      const oRes = await smartFind(dataUrl, objectLabels)
+      // Run object detection on the same trimmed image so they align.
+      const oRes = await smartFind(bRes.imageDataUrl, objectLabels)
       setPendingObjects(oRes.objects)
       if (buildings.length === 0 && oRes.objects.length === 0) {
         alert('The model found nothing matching. Try different words.')
         return
       }
-      setScan({ imageDataUrl: dataUrl, aspect: bRes.aspect, buildings })
+      setScan({ imageDataUrl: bRes.imageDataUrl, aspect: bRes.aspect, buildings })
     } catch {
       alert('Could not load the smart model. It downloads on first use, so this needs internet.')
     } finally {
@@ -546,7 +547,7 @@ export default function App() {
       setState((s) => ({
         ...s,
         floor: {
-          imageDataUrl: dataUrl,
+          imageDataUrl: det.imageDataUrl,
           width: det.floorWidth,
           height: det.floorHeight,
           metresWide: s.floor.metresWide,

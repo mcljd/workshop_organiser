@@ -1,5 +1,6 @@
 import type { FloorItem, Zone } from './types'
 import { newId } from './storage'
+import { prepImage } from './imageprep'
 
 // A self-contained floor-plan reader. No API, no model, no network — just
 // classical computer vision running on a canvas in the browser:
@@ -17,22 +18,14 @@ export interface Detection {
   zones: Zone[]
   items: FloorItem[]
   summary: { doors: number; objects: number }
+  /** The image actually analysed (letterbox borders trimmed). */
+  imageDataUrl: string
 }
 
-const TARGET = 360 // px on the long edge — small enough to be instant
-
 export async function analyzeFloorPlan(dataUrl: string): Promise<Detection> {
-  const img = await loadImage(dataUrl)
-  const scale = TARGET / Math.max(img.width, img.height)
-  const W = Math.max(1, Math.round(img.width * scale))
-  const H = Math.max(1, Math.round(img.height * scale))
-
-  const canvas = document.createElement('canvas')
-  canvas.width = W
-  canvas.height = H
-  const ctx = canvas.getContext('2d', { willReadFrequently: true })!
-  ctx.drawImage(img, 0, 0, W, H)
-  const { data } = ctx.getImageData(0, 0, W, H)
+  // Trim any black/uniform borders first, then analyse the real content.
+  const prepped = await prepImage(dataUrl, 360)
+  const { W, H, data } = prepped
 
   // Grayscale + Otsu threshold -> ink mask (1 = wall/line).
   const gray = new Uint8Array(W * H)
@@ -75,7 +68,14 @@ export async function analyzeFloorPlan(dataUrl: string): Promise<Detection> {
     }
   }
   if (maxX <= minX || maxY <= minY) {
-    return { floorWidth: 1200, floorHeight: 800, zones: [], items: [], summary: { doors: 0, objects: 0 } }
+    return {
+      floorWidth: 1200,
+      floorHeight: 800,
+      zones: [],
+      items: [],
+      summary: { doors: 0, objects: 0 },
+      imageDataUrl: prepped.dataUrl,
+    }
   }
 
   const bw = maxX - minX
@@ -139,6 +139,7 @@ export async function analyzeFloorPlan(dataUrl: string): Promise<Detection> {
     zones: [],
     items,
     summary: { doors: doors.length, objects: objN },
+    imageDataUrl: prepped.dataUrl,
   }
 }
 
@@ -302,13 +303,4 @@ function otsu(hist: number[], total: number): number {
     }
   }
   return threshold
-}
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve(img)
-    img.onerror = reject
-    img.src = src
-  })
 }

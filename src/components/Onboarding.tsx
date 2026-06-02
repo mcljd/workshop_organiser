@@ -83,7 +83,7 @@ export function Onboarding({ onClose, onBuild }: Props) {
         onBuild({
           version: 2,
           name: answers.name.trim() || 'My Workshop',
-          floor: { imageDataUrl: floorImage, width: det.floorWidth, height: det.floorHeight },
+          floor: { imageDataUrl: det.imageDataUrl, width: det.floorWidth, height: det.floorHeight },
           zones: det.zones,
           items: merged,
         })

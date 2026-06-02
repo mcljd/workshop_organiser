@@ -5,6 +5,8 @@
 // roughly-rectangular ones. Results are deliberately treated as *candidates*
 // for a human to confirm/correct — and those corrections tune future scans.
 
+import { prepImage } from './imageprep'
+
 export interface Building {
   id: string
   x: number // normalised 0..1 (top-left)
@@ -66,17 +68,10 @@ export function recordFeedback(buildings: Building[]): void {
 
 export async function detectBuildings(dataUrl: string): Promise<BuildingScan> {
   const learned = loadLearned()
-  const img = await loadImage(dataUrl)
-  const scale = 420 / Math.max(img.width, img.height)
-  const W = Math.max(1, Math.round(img.width * scale))
-  const H = Math.max(1, Math.round(img.height * scale))
-
-  const canvas = document.createElement('canvas')
-  canvas.width = W
-  canvas.height = H
-  const ctx = canvas.getContext('2d', { willReadFrequently: true })!
-  ctx.drawImage(img, 0, 0, W, H)
-  const { data } = ctx.getImageData(0, 0, W, H)
+  // Trim letterbox/black borders first so the border-based background estimate
+  // samples the real surroundings (sky/grass/tarmac), not the black bars.
+  const prepped = await prepImage(dataUrl, 420)
+  const { W, H, data } = prepped
 
   // Estimate the background as the average colour of the image border.
   let br = 0,
@@ -151,7 +146,7 @@ export async function detectBuildings(dataUrl: string): Promise<BuildingScan> {
   }
 
   buildings.sort((a, b) => b.score - a.score)
-  return { imageDataUrl: dataUrl, aspect: img.width / img.height, buildings: buildings.slice(0, 16) }
+  return { imageDataUrl: prepped.dataUrl, aspect: W / H, buildings: buildings.slice(0, 16) }
 }
 
 interface Comp {
@@ -231,13 +226,4 @@ function dilate(m: Uint8Array, W: number, H: number): Uint8Array {
 
 function clamp(v: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, v))
-}
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const im = new Image()
-    im.onload = () => resolve(im)
-    im.onerror = reject
-    im.src = src
-  })
 }
