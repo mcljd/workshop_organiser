@@ -323,13 +323,17 @@ function Item3D({
         document.body.style.cursor = 'auto'
       }}
     >
-      {item.shape === 'boat' ? (
-        <Boat length={item.width} beam={item.height} height={hullH} color={color} />
-      ) : item.shape === 'door' ? (
-        <Door length={item.width} color={color} />
-      ) : (
-        <Vehicle length={item.width} width={item.height} height={hullH} color={color} />
-      )}
+      {(() => {
+        const kind = kindOf(item)
+        if (kind === 'boat')
+          return <Boat length={item.width} beam={item.height} height={hullH} color={color} />
+        if (kind === 'door') return <Door length={item.width} color={color} />
+        if (kind === 'car')
+          return <Car length={item.width} width={item.height} height={hullH} color={color} />
+        if (kind === 'trailer')
+          return <Trailer length={item.width} width={item.height} height={hullH} color={color} />
+        return <Crate length={item.width} width={item.height} height={hullH} color={color} />
+      })()}
 
       {/* Overdue marker: a red ring that's always visible. */}
       {overdue && item.shape !== 'door' && (
@@ -423,32 +427,37 @@ function Boat({
       >
         <meshStandardMaterial color="#f8fafc" roughness={0.4} />
       </RoundedBox>
+      {/* Outboard motor at the stern. */}
+      <mesh position={[-length / 2 - beam * 0.04, height * 0.7, 0]} castShadow>
+        <boxGeometry args={[beam * 0.14, height * 1.2, beam * 0.26]} />
+        <meshStandardMaterial color="#1f2937" roughness={0.6} />
+      </mesh>
     </group>
   )
 }
 
-/** A door / opening: an upright frame straddling the wall line. */
-function Door({ length, color }: { length: number; color: string }) {
-  const h = 90
-  const post = 10
+type Kind = 'boat' | 'car' | 'trailer' | 'crate' | 'door'
+function kindOf(item: FloorItem): Kind {
+  if (item.shape === 'boat') return 'boat'
+  if (item.shape === 'door') return 'door'
+  const n = item.name.toLowerCase()
+  if (/trailer|bunk|cradle/.test(n)) return 'trailer'
+  if (/car|van|vehicle|truck|bus|lorry|focus|golf|civic|astra|polo|mini/.test(n)) return 'car'
+  return 'crate'
+}
+
+/** A wheel: a short dark cylinder with its axle along Z (across the body). */
+function Wheel({ x, z, r, w }: { x: number; z: number; r: number; w: number }) {
   return (
-    <group>
-      {/* Two posts + a lintel, like a door frame. */}
-      <RoundedBox args={[post, h, post]} radius={2} position={[-length / 2, h / 2, 0]} castShadow>
-        <meshStandardMaterial color={color} roughness={0.6} />
-      </RoundedBox>
-      <RoundedBox args={[post, h, post]} radius={2} position={[length / 2, h / 2, 0]} castShadow>
-        <meshStandardMaterial color={color} roughness={0.6} />
-      </RoundedBox>
-      <RoundedBox args={[length + post, post, post]} radius={2} position={[0, h, 0]} castShadow>
-        <meshStandardMaterial color={color} roughness={0.6} />
-      </RoundedBox>
-    </group>
+    <mesh position={[x, r, z]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+      <cylinderGeometry args={[r, r, w, 18]} />
+      <meshStandardMaterial color="#1f2937" roughness={0.85} />
+    </mesh>
   )
 }
 
-/** Simple vehicle / crate body for cars and pallets. */
-function Vehicle({
+/** A car: body + glasshouse cabin + four wheels. */
+function Car({
   length,
   width,
   height,
@@ -459,26 +468,124 @@ function Vehicle({
   height: number
   color: string
 }) {
+  const r = Math.min(width, height) * 0.26
+  const bodyH = height * 0.62
+  const wx = length * 0.32
+  const wz = width * 0.42
   return (
     <group>
       <RoundedBox
-        args={[length, height, width]}
-        radius={Math.min(width, height) * 0.18}
-        smoothness={3}
-        position={[0, height / 2, 0]}
+        args={[length, bodyH, width * 0.92]}
+        radius={Math.min(width, bodyH) * 0.22}
+        smoothness={4}
+        position={[0, r + bodyH / 2, 0]}
         castShadow
         receiveShadow
       >
-        <meshStandardMaterial color={color} roughness={0.5} metalness={0.05} />
+        <meshStandardMaterial color={color} roughness={0.35} metalness={0.25} />
       </RoundedBox>
       <RoundedBox
-        args={[length * 0.5, height * 0.8, width * 0.82]}
-        radius={Math.min(width, height) * 0.12}
-        smoothness={3}
-        position={[length * 0.02, height * 1.25, 0]}
+        args={[length * 0.5, bodyH * 0.7, width * 0.8]}
+        radius={Math.min(width, bodyH) * 0.14}
+        smoothness={4}
+        position={[-length * 0.04, r + bodyH + bodyH * 0.3, 0]}
         castShadow
       >
-        <meshStandardMaterial color="#e2e8f0" roughness={0.4} />
+        <meshStandardMaterial color="#cdd9e8" roughness={0.2} metalness={0.1} />
+      </RoundedBox>
+      <Wheel x={wx} z={wz} r={r} w={width * 0.12} />
+      <Wheel x={wx} z={-wz} r={r} w={width * 0.12} />
+      <Wheel x={-wx} z={wz} r={r} w={width * 0.12} />
+      <Wheel x={-wx} z={-wz} r={r} w={width * 0.12} />
+    </group>
+  )
+}
+
+/** A flatbed trailer: deck + drawbar + two wheels. */
+function Trailer({
+  length,
+  width,
+  height,
+  color,
+}: {
+  length: number
+  width: number
+  height: number
+  color: string
+}) {
+  const r = Math.min(width, height) * 0.2
+  const deckH = Math.max(6, height * 0.16)
+  return (
+    <group>
+      <RoundedBox
+        args={[length * 0.78, deckH, width * 0.9]}
+        radius={deckH * 0.4}
+        smoothness={3}
+        position={[-length * 0.02, r + deckH / 2, 0]}
+        castShadow
+        receiveShadow
+      >
+        <meshStandardMaterial color={color} roughness={0.6} metalness={0.1} />
+      </RoundedBox>
+      {/* Drawbar towards +X (the hitch end). */}
+      <mesh position={[length * 0.42, r + deckH * 0.5, 0]} castShadow>
+        <boxGeometry args={[length * 0.28, deckH * 0.5, width * 0.08]} />
+        <meshStandardMaterial color="#475569" roughness={0.7} />
+      </mesh>
+      <Wheel x={-length * 0.12} z={width * 0.46} r={r} w={width * 0.1} />
+      <Wheel x={-length * 0.12} z={-width * 0.46} r={r} w={width * 0.1} />
+    </group>
+  )
+}
+
+/** A crate / pallet / generic stock item. */
+function Crate({
+  length,
+  width,
+  height,
+  color,
+}: {
+  length: number
+  width: number
+  height: number
+  color: string
+}) {
+  const h = height * 0.8
+  return (
+    <group>
+      <RoundedBox
+        args={[length, h, width]}
+        radius={Math.min(length, width, h) * 0.08}
+        smoothness={2}
+        position={[0, h / 2 + height * 0.08, 0]}
+        castShadow
+        receiveShadow
+      >
+        <meshStandardMaterial color={color} roughness={0.8} metalness={0.05} />
+      </RoundedBox>
+      {/* Pallet base. */}
+      <mesh position={[0, height * 0.04, 0]} castShadow>
+        <boxGeometry args={[length, height * 0.08, width]} />
+        <meshStandardMaterial color="#92702f" roughness={0.95} />
+      </mesh>
+    </group>
+  )
+}
+
+/** A door / opening: an upright frame straddling the wall line. */
+function Door({ length, color }: { length: number; color: string }) {
+  const h = 90
+  const post = 10
+  return (
+    <group>
+      <RoundedBox args={[post, h, post]} radius={2} position={[-length / 2, h / 2, 0]} castShadow>
+        <meshStandardMaterial color={color} roughness={0.6} />
+      </RoundedBox>
+      <RoundedBox args={[post, h, post]} radius={2} position={[length / 2, h / 2, 0]} castShadow>
+        <meshStandardMaterial color={color} roughness={0.6} />
+      </RoundedBox>
+      <RoundedBox args={[length + post, post, post]} radius={2} position={[0, h, 0]} castShadow>
+        <meshStandardMaterial color={color} roughness={0.6} />
       </RoundedBox>
     </group>
   )
