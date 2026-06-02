@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { WorkshopState } from '../types'
 import {
   generateWorkshop,
@@ -41,6 +41,16 @@ export function Onboarding({ onClose, onBuild }: Props) {
   })
   const planInput = useRef<HTMLInputElement | null>(null)
   const photoInput = useRef<HTMLInputElement | null>(null)
+  const cameraInput = useRef<HTMLInputElement | null>(null)
+
+  // Let Escape close the wizard.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   function readFile(file: File, cb: (dataUrl: string) => void) {
     const r = new FileReader()
@@ -83,9 +93,9 @@ export function Onboarding({ onClose, onBuild }: Props) {
   }
 
   return (
-    <div className="overlay">
+    <div className="overlay" role="dialog" aria-modal="true" aria-label="Set up your workshop">
       <div className="wizard">
-        <button className="wizard-close" onClick={onClose} aria-label="Close">
+        <button className="wizard-close" onClick={onClose} aria-label="Close setup">
           ✕
         </button>
 
@@ -179,9 +189,26 @@ export function Onboarding({ onClose, onBuild }: Props) {
               }}
             />
 
+            <input
+              ref={cameraInput}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              hidden
+              onChange={(e) => {
+                Array.from(e.target.files ?? []).forEach((f) =>
+                  readFile(f, (d) => setPhotos((p) => [...p, d])),
+                )
+                e.target.value = ''
+              }}
+            />
+
             <div className="wizard-actions">
               <button className="primary" onClick={() => setStep(2)}>
                 Next
+              </button>
+              <button className="ghost camera-btn" onClick={() => cameraInput.current?.click()}>
+                📷 Take a photo
               </button>
               <button className="ghost" onClick={() => setStep(2)}>
                 Skip

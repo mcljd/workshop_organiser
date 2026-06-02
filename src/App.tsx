@@ -5,6 +5,7 @@ import { Toolbar } from './components/Toolbar'
 import { InsightsPanel } from './components/InsightsPanel'
 import { Onboarding } from './components/Onboarding'
 import { analyse } from './analyse'
+import { optimiseLayout } from './optimise'
 import { analyzeFloorPlan } from './vision'
 import { SCENARIOS } from './scenarios'
 import type { FloorItem, ItemStatus, WorkshopState } from './types'
@@ -29,8 +30,10 @@ export default function App() {
     return () => clearTimeout(t)
   }, [state])
 
-  // Keyboard: Delete removes the selected item, Escape deselects.
+  // Keyboard: Delete removes the selected item, Escape deselects, arrow keys
+  // nudge it (Shift = larger steps) — so the floor is usable without a mouse.
   useEffect(() => {
+    const ARROWS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']
     function onKey(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement).tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
@@ -39,6 +42,25 @@ export default function App() {
         setSelectedId(null)
       } else if (e.key === 'Escape') {
         setSelectedId(null)
+      } else if (selectedId && ARROWS.includes(e.key)) {
+        e.preventDefault()
+        const step = e.shiftKey ? 50 : 10
+        setState((s) => ({
+          ...s,
+          items: s.items.map((i) => {
+            if (i.id !== selectedId) return i
+            let { x, y } = i
+            if (e.key === 'ArrowUp') y -= step
+            if (e.key === 'ArrowDown') y += step
+            if (e.key === 'ArrowLeft') x -= step
+            if (e.key === 'ArrowRight') x += step
+            return {
+              ...i,
+              x: Math.max(0, Math.min(s.floor.width, x)),
+              y: Math.max(0, Math.min(s.floor.height, y)),
+            }
+          }),
+        }))
       }
     }
     window.addEventListener('keydown', onKey)
@@ -133,6 +155,38 @@ export default function App() {
     }
   }
 
+  function optimise() {
+    const targets = optimiseLayout(state)
+    if (targets.size === 0) return
+    const reduce =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    const apply = (e: number) =>
+      setState((s) => ({
+        ...s,
+        items: s.items.map((i) => {
+          const tg = targets.get(i.id)
+          const fr = from.get(i.id)
+          if (!tg || !fr) return i
+          return { ...i, x: fr.x + (tg.x - fr.x) * e, y: fr.y + (tg.y - fr.y) * e }
+        }),
+      }))
+    const from = new Map(state.items.map((i) => [i.id, { x: i.x, y: i.y }]))
+    if (reduce) {
+      apply(1)
+      return
+    }
+    const start = performance.now()
+    const dur = 700
+    const tick = (t: number) => {
+      const k = Math.min(1, (t - start) / dur)
+      const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2 // easeInOutQuad
+      apply(e)
+      if (k < 1) requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+  }
+
   function importState(text: string) {
     const imported = parseImportedState(text)
     if (!imported) {
@@ -171,7 +225,11 @@ export default function App() {
       />
 
       <main className="workspace">
-        <div className="canvas-wrap">
+        <div
+          className="canvas-wrap"
+          role="application"
+          aria-label="Interactive 3D workshop floor. Drag items to move them; use the side panel and arrow keys to edit."
+        >
           <Scene3D
             floor={state.floor}
             zones={state.zones}
@@ -186,7 +244,7 @@ export default function App() {
         </div>
 
         <aside className="panel">
-          <InsightsPanel analysis={analysis} onSelectItem={setSelectedId} />
+          <InsightsPanel analysis={analysis} onSelectItem={setSelectedId} onOptimise={optimise} />
           <div className="panel-divider" />
           <h3 className="panel-h">Details</h3>
           <Sidebar

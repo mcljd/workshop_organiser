@@ -85,7 +85,9 @@ export function Toolbar({
           </select>
         </label>
 
-        <button onClick={onAddItem}>+ Add item</button>
+        <button onClick={onAddItem} aria-label="Add a new item to the floor">
+          + Add item
+        </button>
         <button className="accent" onClick={onNewFromSpace}>
           ✦ Build from my space
         </button>
