@@ -19,6 +19,7 @@ interface Props {
   hasPlan: boolean
   onExport: () => void
   onImport: (text: string) => void
+  onImportImage: (dataUrl: string) => void
   counts: Record<ItemStatus, number>
   liveId: string | null
   onGoLive: () => void
@@ -42,6 +43,7 @@ export function Toolbar({
   hasPlan,
   onExport,
   onImport,
+  onImportImage,
   counts,
   liveId,
   onGoLive,
@@ -63,8 +65,15 @@ export function Toolbar({
   function handleImportFile(file: File | undefined) {
     if (!file) return
     const reader = new FileReader()
-    reader.onload = () => onImport(String(reader.result))
-    reader.readAsText(file)
+    // An image? Treat it as a floor plan and read it. Otherwise import as a
+    // saved Yardly layout (JSON).
+    if (file.type.startsWith('image/')) {
+      reader.onload = () => onImportImage(String(reader.result))
+      reader.readAsDataURL(file)
+    } else {
+      reader.onload = () => onImport(String(reader.result))
+      reader.readAsText(file)
+    }
   }
 
   return (
@@ -173,8 +182,12 @@ export function Toolbar({
         <button className="ghost" onClick={onExport}>
           Export
         </button>
-        <button className="ghost" onClick={() => importInput.current?.click()}>
-          Import
+        <button
+          className="ghost"
+          onClick={() => importInput.current?.click()}
+          title="Open a saved Yardly layout (.json) or a floor-plan image"
+        >
+          Open / Import
         </button>
       </div>
 

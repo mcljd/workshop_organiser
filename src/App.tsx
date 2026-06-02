@@ -538,10 +538,37 @@ export default function App() {
     navigator.clipboard?.writeText(window.location.href)
   }
 
+  // Importing an image just reads it as a floor plan and builds the site.
+  async function importImage(dataUrl: string) {
+    setAiBusy('Reading your floor plan…')
+    try {
+      const det = await analyzeFloorPlan(dataUrl)
+      setState((s) => ({
+        ...s,
+        floor: {
+          imageDataUrl: dataUrl,
+          width: det.floorWidth,
+          height: det.floorHeight,
+          metresWide: s.floor.metresWide,
+        },
+        zones: det.zones,
+        items: det.items,
+      }))
+      setSelectedId(null)
+      logEvent('scan', `Read floor plan — ${det.summary.doors} doors, ${det.summary.objects} objects`)
+    } catch {
+      alert('Could not read that image. Try a clearer floor-plan image.')
+    } finally {
+      setAiBusy(null)
+    }
+  }
+
   function importState(text: string) {
     const imported = parseImportedState(text)
     if (!imported) {
-      alert('That file does not look like a valid workshop layout.')
+      alert(
+        'That file is not a saved Yardly layout. To use a floor plan or photo, upload an image (PNG/JPG) — it’ll be read automatically.',
+      )
       return
     }
     setState(imported)
@@ -578,6 +605,7 @@ export default function App() {
         hasPlan={!!state.floor.imageDataUrl}
         onExport={() => exportState(state)}
         onImport={importState}
+        onImportImage={importImage}
         counts={counts}
         liveId={liveId}
         onGoLive={goLive}
