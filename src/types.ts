@@ -50,6 +50,8 @@ export interface FloorPlan {
   /** Size of the workshop in world units. The SVG viewBox maps to this. */
   width: number
   height: number
+  /** Real-world width of the floor in metres, so items can be sized to scale. */
+  metresWide?: number
 }
 
 export interface WorkshopState {

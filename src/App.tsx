@@ -4,9 +4,12 @@ import { Toolbar } from './components/Toolbar'
 import { InsightsPanel } from './components/InsightsPanel'
 import { ManagerPanel } from './components/ManagerPanel'
 import { Onboarding } from './components/Onboarding'
+import { BuildingReview } from './components/BuildingReview'
+import { AddItemDialog } from './components/AddItemDialog'
 import { analyse } from './analyse'
 import { optimiseLayout } from './optimise'
 import { analyzeFloorPlan } from './vision'
+import { detectBuildings, recordFeedback, type Building, type BuildingScan } from './buildings'
 import { SCENARIOS } from './scenarios'
 import type { FloorItem, ItemStatus, WorkshopState } from './types'
 import {
@@ -29,6 +32,8 @@ export default function App() {
   const [state, setState] = useState<WorkshopState>(() => loadState())
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [showWizard, setShowWizard] = useState(() => !localStorage.getItem(SEEN_KEY))
+  const [scan, setScan] = useState<BuildingScan | null>(null)
+  const [showAdd, setShowAdd] = useState(false)
 
   // Auto-save on every change (debounced a touch to avoid thrashing storage).
   useEffect(() => {
@@ -91,22 +96,56 @@ export default function App() {
     return base
   }, [state.items])
 
-  function addItem() {
-    const isBoat = state.items.some((i) => i.shape === 'boat')
-    const item: FloorItem = {
-      id: newId(),
-      name: `${isBoat ? 'Boat' : 'Item'} ${state.items.length + 1}`,
-      x: state.floor.width * 0.5,
-      y: state.floor.height * 0.5,
-      width: isBoat ? 200 : 150,
-      height: isBoat ? 78 : 90,
-      rotation: 0,
-      status: 'incoming',
-      shape: isBoat ? 'boat' : 'box',
-      arrivedAt: new Date().toISOString(),
-    }
-    setState((s) => ({ ...s, items: [...s.items, item] }))
+  function addBySize(item: FloorItem, metresWide: number) {
+    setState((s) => ({
+      ...s,
+      floor: { ...s.floor, metresWide },
+      items: [...s.items, item],
+    }))
     setSelectedId(item.id)
+    setShowAdd(false)
+  }
+
+  // --- Aerial scan: detect buildings, then let the user review/correct. ---
+  async function scanAerial(dataUrl: string) {
+    setScan(await detectBuildings(dataUrl))
+  }
+
+  const SHED_COLORS = [
+    '#6366f1',
+    '#14b8a6',
+    '#f97316',
+    '#a855f7',
+    '#0ea5e9',
+    '#22c55e',
+    '#ef4444',
+    '#64748b',
+  ]
+
+  function confirmScan(buildings: Building[], metresWide: number) {
+    if (!scan) return
+    recordFeedback(buildings) // learn from keeps vs drops
+    const FW = 1200
+    const FH = Math.round(FW / scan.aspect)
+    const zones = buildings
+      .filter((b) => b.keep)
+      .map((b, i) => ({
+        id: newId(),
+        name: b.name,
+        x: b.x * FW,
+        y: b.y * FH,
+        width: b.w * FW,
+        height: b.h * FH,
+        color: SHED_COLORS[i % SHED_COLORS.length],
+      }))
+    setState((s) => ({
+      ...s,
+      floor: { imageDataUrl: scan.imageDataUrl, width: FW, height: FH, metresWide },
+      zones,
+      items: [],
+    }))
+    setSelectedId(null)
+    setScan(null)
   }
 
   function moveItem(id: string, x: number, y: number) {
@@ -221,9 +260,10 @@ export default function App() {
       <Toolbar
         workshopName={state.name}
         onRename={(name) => setState((s) => ({ ...s, name }))}
-        onAddItem={addItem}
+        onAddItem={() => setShowAdd(true)}
         onLoadScenario={loadScenario}
         onNewFromSpace={() => setShowWizard(true)}
+        onScanAerial={scanAerial}
         onDetect={detectFromPlan}
         hasPlan={!!state.floor.imageDataUrl}
         onExport={() => exportState(state)}
@@ -272,6 +312,17 @@ export default function App() {
       </main>
 
       {showWizard && <Onboarding onClose={closeWizard} onBuild={finishWizard} />}
+      {scan && (
+        <BuildingReview scan={scan} onConfirm={confirmScan} onCancel={() => setScan(null)} />
+      )}
+      {showAdd && (
+        <AddItemDialog
+          floor={state.floor}
+          zones={state.zones}
+          onAdd={addBySize}
+          onClose={() => setShowAdd(false)}
+        />
+      )}
     </div>
   )
 }

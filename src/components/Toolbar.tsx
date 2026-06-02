@@ -9,6 +9,7 @@ interface Props {
   onAddItem: () => void
   onLoadScenario: (key: string) => void
   onNewFromSpace: () => void
+  onScanAerial: (dataUrl: string) => void
   onDetect: () => void
   hasPlan: boolean
   onExport: () => void
@@ -23,6 +24,7 @@ export function Toolbar({
   onAddItem,
   onLoadScenario,
   onNewFromSpace,
+  onScanAerial,
   onDetect,
   hasPlan,
   onExport,
@@ -30,6 +32,14 @@ export function Toolbar({
   counts,
 }: Props) {
   const importInput = useRef<HTMLInputElement | null>(null)
+  const aerialInput = useRef<HTMLInputElement | null>(null)
+
+  function handleAerial(file: File | undefined) {
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => onScanAerial(String(reader.result))
+    reader.readAsDataURL(file)
+  }
 
   function handleImportFile(file: File | undefined) {
     if (!file) return
@@ -91,6 +101,9 @@ export function Toolbar({
         <button className="accent" onClick={onNewFromSpace}>
           ✦ Build from my space
         </button>
+        <button className="ghost" onClick={() => aerialInput.current?.click()} title="Detect buildings from an aerial/satellite image">
+          🛰 Scan aerial
+        </button>
         {hasPlan && (
           <button className="ghost" onClick={onDetect} title="Re-read the floor plan and add detected doors and objects">
             ⌖ Re-read plan
@@ -114,6 +127,16 @@ export function Toolbar({
         hidden
         onChange={(e) => {
           handleImportFile(e.target.files?.[0])
+          e.target.value = ''
+        }}
+      />
+      <input
+        ref={aerialInput}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={(e) => {
+          handleAerial(e.target.files?.[0])
           e.target.value = ''
         }}
       />
