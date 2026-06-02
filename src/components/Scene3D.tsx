@@ -13,6 +13,7 @@ interface Props {
   selectedId: string | null
   onSelect: (id: string | null) => void
   onMoveItem: (id: string, x: number, y: number) => void
+  onMoveStart?: () => void
   onMoveEnd?: (id: string) => void
 }
 
@@ -28,6 +29,7 @@ export function Scene3D({
   selectedId,
   onSelect,
   onMoveItem,
+  onMoveStart,
   onMoveEnd,
 }: Props) {
   const W = floor.width
@@ -40,6 +42,7 @@ export function Scene3D({
     const sceneX = item.x - W / 2
     const sceneZ = item.y - H / 2
     grabOffset.current = { x: point.x - sceneX, z: point.z - sceneZ }
+    onMoveStart?.()
     setDragging(item.id)
     onSelect(item.id)
   }

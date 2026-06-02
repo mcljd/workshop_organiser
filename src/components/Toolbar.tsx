@@ -19,8 +19,11 @@ interface Props {
   onDetect: () => void
   hasPlan: boolean
   onExport: () => void
+  onExportTraining: () => void
   onImport: (text: string) => void
   onImportImage: (dataUrl: string) => void
+  onUndo: () => void
+  onRedo: () => void
   counts: Record<ItemStatus, number>
   liveId: string | null
   onGoLive: () => void
@@ -44,8 +47,11 @@ export function Toolbar({
   onDetect,
   hasPlan,
   onExport,
+  onExportTraining,
   onImport,
   onImportImage,
+  onUndo,
+  onRedo,
   counts,
   liveId,
   onGoLive,
@@ -128,6 +134,12 @@ export function Toolbar({
           </select>
         </label>
 
+        <button className="ghost icon-btn" onClick={onUndo} title="Undo (Ctrl+Z)" aria-label="Undo">
+          ↶
+        </button>
+        <button className="ghost icon-btn" onClick={onRedo} title="Redo (Ctrl+Shift+Z)" aria-label="Redo">
+          ↷
+        </button>
         <button onClick={onAddItem} aria-label="Add a new item to the floor">
           + Add item
         </button>
@@ -188,6 +200,9 @@ export function Toolbar({
 
         <button className="ghost" onClick={onExport}>
           Export
+        </button>
+        <button className="ghost" onClick={onExportTraining} title="Export this layout as labelled AI training data (JSON)">
+          AI data
         </button>
         <button
           className="ghost"

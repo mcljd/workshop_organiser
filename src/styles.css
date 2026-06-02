@@ -158,6 +158,24 @@ body {
   margin: 0 4px;
 }
 
+.icon-btn {
+  font-size: 17px;
+  padding: 7px 11px;
+  line-height: 1;
+}
+
+.dup-btn {
+  margin-top: 8px;
+}
+
+.field-row > button {
+  flex: 1;
+}
+
+.field-row .danger {
+  width: auto;
+}
+
 button {
   font: inherit;
   font-weight: 600;

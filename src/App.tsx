@@ -76,6 +76,32 @@ export default function App() {
   const suppressEcho = useRef(0)
   const liveChannel = useRef<ReturnType<typeof subscribeSite> | null>(null)
 
+  // Always-fresh state ref + undo/redo stacks (snapshots of whole layouts).
+  const stateRef = useRef(state)
+  stateRef.current = state
+  const undoStack = useRef<WorkshopState[]>([])
+  const redoStack = useRef<WorkshopState[]>([])
+  function snapshot() {
+    undoStack.current.push(stateRef.current)
+    if (undoStack.current.length > 25) undoStack.current.shift()
+    redoStack.current = []
+  }
+  function undo() {
+    const prev = undoStack.current.pop()
+    if (!prev) return
+    redoStack.current.push(stateRef.current)
+    applyingRemote.current = false
+    setState(prev)
+    setSelectedId(null)
+  }
+  function redo() {
+    const next = redoStack.current.pop()
+    if (!next) return
+    undoStack.current.push(stateRef.current)
+    setState(next)
+    setSelectedId(null)
+  }
+
   // Auto-save on every change (debounced). Also push to the cloud when live —
   // unless this change came *from* a remote update (avoids an echo loop).
   useEffect(() => {
@@ -121,6 +147,23 @@ export default function App() {
     function onKey(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement).tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      const mod = e.ctrlKey || e.metaKey
+      if (mod && e.key.toLowerCase() === 'z') {
+        e.preventDefault()
+        if (e.shiftKey) redo()
+        else undo()
+        return
+      }
+      if (mod && e.key.toLowerCase() === 'y') {
+        e.preventDefault()
+        redo()
+        return
+      }
+      if (mod && e.key.toLowerCase() === 'd' && selectedId) {
+        e.preventDefault()
+        duplicateSelected()
+        return
+      }
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
         setState((s) => ({ ...s, items: s.items.filter((i) => i.id !== selectedId) }))
         setSelectedId(null)
@@ -171,6 +214,7 @@ export default function App() {
   }, [state.items])
 
   function addBySize(item: FloorItem, metresWide: number) {
+    snapshot()
     setState((s) => ({
       ...s,
       floor: { ...s.floor, metresWide },
@@ -330,6 +374,50 @@ export default function App() {
     logEvent('move', z ? `Moved ${it.name} into ${z.name}` : `Moved ${it.name}`)
   }
 
+  function duplicateSelected() {
+    const it = stateRef.current.items.find((i) => i.id === selectedId)
+    if (!it) return
+    snapshot()
+    const copy: FloorItem = {
+      ...it,
+      id: newId(),
+      x: Math.min(stateRef.current.floor.width, it.x + 40),
+      y: Math.min(stateRef.current.floor.height, it.y + 40),
+      name: `${it.name} copy`,
+    }
+    setState((s) => ({ ...s, items: [...s.items, copy] }))
+    setSelectedId(copy.id)
+    logEvent('add', `Duplicated ${it.name}`)
+  }
+
+  function exportTraining() {
+    const W = state.floor.width
+    const H = state.floor.height
+    const payload = {
+      image: state.floor.imageDataUrl,
+      floor: { width: W, height: H, metresWide: state.floor.metresWide ?? null },
+      annotations: state.items
+        .filter((i) => i.shape !== 'door')
+        .map((i) => ({
+          label: i.name,
+          shape: i.shape,
+          status: i.status,
+          // normalised box (0..1), centre + size
+          cx: i.x / W,
+          cy: i.y / H,
+          w: i.width / W,
+          h: i.height / H,
+        })),
+    }
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${state.name.replace(/\s+/g, '-').toLowerCase() || 'site'}-training.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   function moveItem(id: string, x: number, y: number) {
     setState((s) => ({
       ...s,
@@ -351,6 +439,7 @@ export default function App() {
 
   function deleteSelected() {
     if (!selectedId) return
+    snapshot()
     const name = state.items.find((i) => i.id === selectedId)?.name ?? 'item'
     setState((s) => ({ ...s, items: s.items.filter((i) => i.id !== selectedId) }))
     setSelectedId(null)
@@ -392,6 +481,7 @@ export default function App() {
   function optimise() {
     const targets = optimiseLayout(state)
     if (targets.size === 0) return
+    snapshot()
     const reduce =
       typeof window !== 'undefined' &&
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -654,8 +744,11 @@ export default function App() {
         onDetect={detectFromPlan}
         hasPlan={!!state.floor.imageDataUrl}
         onExport={() => exportState(state)}
+        onExportTraining={exportTraining}
         onImport={importState}
         onImportImage={importImage}
+        onUndo={undo}
+        onRedo={redo}
         counts={counts}
         liveId={liveId}
         onGoLive={goLive}
@@ -680,6 +773,7 @@ export default function App() {
               selectedId={selectedId}
               onSelect={setSelectedId}
               onMoveItem={moveItem}
+              onMoveStart={snapshot}
               onMoveEnd={moveEnd}
             />
           </Suspense>
@@ -700,6 +794,7 @@ export default function App() {
             allTags={tagList}
             onChange={patchSelected}
             onDelete={deleteSelected}
+            onDuplicate={duplicateSelected}
           />
         </aside>
       </main>

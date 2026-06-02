@@ -9,12 +9,13 @@ interface Props {
   allTags: string[]
   onChange: (patch: Partial<FloorItem>) => void
   onDelete: () => void
+  onDuplicate: () => void
 }
 
 const STATUSES: ItemStatus[] = ['incoming', 'in_progress', 'ready', 'blocked']
 
 /** Edit panel for the currently selected item. */
-export function Sidebar({ item, itemCount, allTags, onChange, onDelete }: Props) {
+export function Sidebar({ item, itemCount, allTags, onChange, onDelete, onDuplicate }: Props) {
   const [tagInput, setTagInput] = useState('')
 
   function addTag(raw: string) {
@@ -166,9 +167,14 @@ export function Sidebar({ item, itemCount, allTags, onChange, onDelete }: Props)
         </div>
       </div>
 
-      <button className="danger" onClick={onDelete}>
-        Delete item
-      </button>
+      <div className="field-row">
+        <button className="ghost dup-btn" onClick={onDuplicate}>
+          Duplicate
+        </button>
+        <button className="danger" onClick={onDelete}>
+          Delete
+        </button>
+      </div>
     </div>
   )
 }
