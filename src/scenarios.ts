@@ -184,6 +184,33 @@ const redbayStores: WorkshopState = {
   ],
 }
 
+// ---- Redbay whole site: both buildings side by side + outdoor yard ---------
+const DX = 1240 // horizontal offset for the second building
+const redbayWhole: WorkshopState = {
+  version: 2,
+  name: 'Redbay Boats — Whole Site',
+  floor: { imageDataUrl: null, width: 2480, height: 1320 },
+  zones: [
+    ...redbayHQ.zones
+      .filter((z) => !z.isExit)
+      .map((z) => ({ ...z, id: id() })),
+    ...redbayStores.zones
+      .filter((z) => !z.isExit)
+      .map((z) => ({ ...z, id: id(), x: z.x + DX })),
+    zone('Yard / Hardstand', 40, 1070, 2400, 230, '#64748b', { isExit: true }),
+  ],
+  items: [
+    ...redbayHQ.items.map((i) => ({ ...i, id: id() })),
+    ...redbayStores.items.map((i) => ({ ...i, id: id(), x: i.x + DX })),
+    boat('Lifeboat hull', 220, 1185, 270, 95, 0, 'ready', 'On the hardstand, ready for collection.'),
+    boat('RIB — yard 1', 580, 1185, 200, 78, 0, 'incoming', 'Just arrived for service.'),
+    boat('RIB — yard 2', 840, 1185, 200, 78, 0, 'incoming'),
+    boat('Pontoon', 1140, 1185, 270, 95, 0, 'in_progress'),
+    boat('Customer RIB', 1520, 1185, 200, 78, 0, 'ready', 'Awaiting customer pickup.'),
+    box('Trailer stack', 1880, 1185, 160, 90, 0, 'incoming'),
+  ],
+}
+
 export interface Scenario {
   key: string
   label: string
@@ -202,6 +229,7 @@ export const SCENARIOS: Scenario[] = [
   { key: 'boatyard', label: 'Boatyard', build: clone(boatyard) },
   { key: 'redbay-hq', label: 'Redbay HQ', build: clone(redbayHQ) },
   { key: 'redbay-stores', label: 'Redbay Stores', build: clone(redbayStores) },
+  { key: 'redbay-whole', label: 'Redbay Whole Site', build: clone(redbayWhole) },
   { key: 'garage', label: 'Car Garage', build: clone(garage) },
   { key: 'warehouse', label: 'Warehouse', build: clone(warehouse) },
 ]
