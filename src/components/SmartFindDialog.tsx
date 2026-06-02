@@ -1,15 +1,26 @@
 import { useRef, useState } from 'react'
 
 interface Props {
+  title?: string
+  lead?: string
+  defaultLabels?: string
+  suggested?: string[]
   onRun: (dataUrl: string, labels: string[]) => void
   onClose: () => void
 }
 
-const SUGGESTED = ['boat', 'trailer', 'car', 'forklift', 'shipping container', 'ladder', 'pallet']
+const DEFAULT_SUGGESTED = ['boat', 'trailer', 'car', 'forklift', 'shipping container', 'ladder', 'pallet']
 
 /** Collects an image + the things to look for, then hands off to the model. */
-export function SmartFindDialog({ onRun, onClose }: Props) {
-  const [labels, setLabels] = useState('boat, trailer, car, forklift')
+export function SmartFindDialog({
+  title = 'Find anything by name',
+  lead = 'Type what to look for and pick a photo. A zero-shot AI model finds those things — even ones it was never specifically trained on. Runs on your device; the model downloads once (no account, no cost).',
+  defaultLabels = 'boat, trailer, car, forklift',
+  suggested = DEFAULT_SUGGESTED,
+  onRun,
+  onClose,
+}: Props) {
+  const [labels, setLabels] = useState(defaultLabels)
   const [preview, setPreview] = useState<string | null>(null)
   const fileInput = useRef<HTMLInputElement | null>(null)
 
@@ -38,19 +49,15 @@ export function SmartFindDialog({ onRun, onClose }: Props) {
         </button>
         <div className="wizard-body">
           <div className="wizard-kicker">Smart find · on-device AI</div>
-          <h1>Find anything by name</h1>
-          <p className="lead">
-            Type what to look for and pick a photo. A zero-shot AI model finds those things —
-            even ones it was never specifically trained on. Runs on your device; the model
-            downloads once (no account, no cost).
-          </p>
+          <h1>{title}</h1>
+          <p className="lead">{lead}</p>
 
           <label className="wfield">
             <span>Look for (comma-separated)</span>
             <input value={labels} onChange={(e) => setLabels(e.target.value)} />
           </label>
           <div className="suggest-row">
-            {SUGGESTED.map((s) => (
+            {suggested.map((s) => (
               <button
                 key={s}
                 className="suggest"

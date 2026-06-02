@@ -41,7 +41,7 @@ export default function App() {
   const [scan, setScan] = useState<BuildingScan | null>(null)
   const [showAdd, setShowAdd] = useState(false)
   const [showZones, setShowZones] = useState(false)
-  const [showSmart, setShowSmart] = useState(false)
+  const [smartMode, setSmartMode] = useState<'objects' | 'buildings' | null>(null)
   const [aiBusy, setAiBusy] = useState<string | null>(null)
 
   // Auto-save on every change (debounced a touch to avoid thrashing storage).
@@ -340,8 +340,39 @@ export default function App() {
     logEvent('optimise', 'Optimised layout')
   }
 
+  // Smart find for buildings: detect named structures, then route through the
+  // same review/correct/learn screen as the classical scanner.
+  async function runSmartScan(dataUrl: string, labels: string[]) {
+    setSmartMode(null)
+    setAiBusy('Loading smart model & finding buildings… (first run downloads it)')
+    try {
+      const res = await smartFind(dataUrl, labels)
+      const buildings = res.objects
+        .map((o, i) => ({
+          id: `s${i}`,
+          x: Math.max(0, o.cx - o.w / 2),
+          y: Math.max(0, o.cy - o.h / 2),
+          w: o.w,
+          h: o.h,
+          score: o.score,
+          name: o.label.replace(/^./, (c) => c.toUpperCase()),
+          keep: o.score >= 0.2,
+        }))
+        .sort((a, b) => b.score - a.score)
+      if (buildings.length === 0) {
+        alert('The model found no matching structures. Try words like "shed, building, warehouse".')
+        return
+      }
+      setScan({ imageDataUrl: dataUrl, aspect: res.aspect, buildings })
+    } catch {
+      alert('Could not load the smart model. It downloads on first use, so this needs internet.')
+    } finally {
+      setAiBusy(null)
+    }
+  }
+
   async function runSmartFind(dataUrl: string, labels: string[]) {
-    setShowSmart(false)
+    setSmartMode(null)
     setAiBusy('Loading smart model & searching… (first run downloads it)')
     try {
       const res = await smartFind(dataUrl, labels)
@@ -404,7 +435,8 @@ export default function App() {
         onNewFromSpace={() => setShowWizard(true)}
         onScanAerial={scanAerial}
         onFindObjects={findObjectsAI}
-        onSmartFind={() => setShowSmart(true)}
+        onSmartFind={() => setSmartMode('objects')}
+        onSmartScan={() => setSmartMode('buildings')}
         onEditZones={() => setShowZones(true)}
         onDetect={detectFromPlan}
         hasPlan={!!state.floor.imageDataUrl}
@@ -485,7 +517,19 @@ export default function App() {
           onClose={() => setShowAdd(false)}
         />
       )}
-      {showSmart && <SmartFindDialog onRun={runSmartFind} onClose={() => setShowSmart(false)} />}
+      {smartMode === 'objects' && (
+        <SmartFindDialog onRun={runSmartFind} onClose={() => setSmartMode(null)} />
+      )}
+      {smartMode === 'buildings' && (
+        <SmartFindDialog
+          title="Find buildings by name"
+          lead="Pick an aerial/overhead photo and type the structures to look for. The on-device AI detects them, then you review and correct — and it learns from your edits."
+          defaultLabels="shed, building, warehouse, unit"
+          suggested={['shed', 'building', 'warehouse', 'unit', 'hangar', 'workshop', 'marquee']}
+          onRun={runSmartScan}
+          onClose={() => setSmartMode(null)}
+        />
+      )}
     </div>
   )
 }
