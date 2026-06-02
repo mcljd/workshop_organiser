@@ -119,6 +119,71 @@ const warehouse: WorkshopState = {
   ],
 }
 
+// ---- Redbay HQ (main building, from the real floor plan) -------------------
+const redbayHQ: WorkshopState = {
+  version: 2,
+  name: 'Redbay Boats — HQ',
+  floor: { imageDataUrl: null, width: 1200, height: 1024 },
+  zones: [
+    zone('Design Office', 20, 20, 180, 120, '#94a3b8'),
+    zone('Conor Office', 210, 20, 120, 120, '#94a3b8'),
+    zone('Main Office', 340, 20, 230, 120, '#94a3b8'),
+    zone('Customer Suite', 640, 20, 230, 120, '#0ea5e9'),
+    zone('Toilets', 880, 20, 110, 120, '#94a3b8'),
+    zone('Steve Kitchen', 1000, 20, 180, 190, '#94a3b8'),
+    zone('Main Workshop', 20, 360, 470, 640, '#6366f1'),
+    zone('Tubers Bench', 430, 300, 80, 210, '#a855f7'),
+    zone('Show Room', 520, 220, 420, 300, '#14b8a6'),
+    zone('Welding Workshop', 950, 360, 230, 210, '#f97316'),
+    zone('Storage', 780, 540, 170, 150, '#a855f7'),
+    zone('Heater', 430, 720, 110, 90, '#94a3b8'),
+    zone('Sheet wood & pallet storage', 560, 780, 330, 70, '#a855f7'),
+    zone('Compressor', 330, 870, 110, 90, '#94a3b8'),
+    zone('Engine Store', 520, 870, 360, 130, '#64748b'),
+    zone('Despatch', 20, 20, 1, 1, '#22c55e', { isExit: true }),
+  ],
+  items: [
+    boat('Stormforce 11 (display)', 730, 360, 280, 90, 0, 'ready', 'Showroom demo boat.'),
+    boat('Cygnus GRP hull', 250, 520, 240, 85, 0, 'in_progress', 'Lay-up in progress.'),
+    boat('Hull 214', 1060, 460, 200, 78, 90, 'in_progress', 'Welding the A-frame.'),
+    box('Suzuki DF250', 700, 935, 120, 80, 0, 'incoming', 'Awaiting fit.'),
+    box('Resin pallet', 700, 815, 130, 50, 0, 'incoming'),
+    box('Build trailer', 250, 760, 200, 70, 0, 'incoming', 'Spare build trailer.'),
+  ],
+}
+
+// ---- Redbay Stores & Tubing (second building, from the floor plan) ---------
+const redbayStores: WorkshopState = {
+  version: 2,
+  name: 'Redbay Boats — Stores & Tubing',
+  floor: { imageDataUrl: null, width: 1200, height: 976 },
+  zones: [
+    zone('Fibreglass tools', 20, 20, 70, 300, '#a855f7'),
+    zone('Main Store', 110, 20, 420, 120, '#6366f1'),
+    zone('Shop', 560, 20, 250, 120, '#14b8a6'),
+    zone('Tea Room', 840, 20, 340, 120, '#0ea5e9'),
+    zone('Printer Room', 980, 150, 200, 80, '#94a3b8'),
+    zone('Props + engine spares', 980, 240, 200, 70, '#a855f7'),
+    zone('Files', 1110, 320, 70, 170, '#94a3b8'),
+    zone('S/S and Brass', 40, 170, 130, 70, '#a855f7'),
+    zone('Fabric', 380, 180, 120, 120, '#f97316'),
+    zone('Lexan', 380, 320, 120, 120, '#f97316'),
+    zone('Wire', 600, 170, 80, 60, '#a855f7'),
+    zone('Hoses', 690, 170, 90, 60, '#a855f7'),
+    zone('Sheet wood & pallet storage', 430, 560, 330, 60, '#a855f7'),
+    zone('Tubing Workshop', 430, 640, 730, 320, '#f59e0b'),
+    zone('Loading door', 60, 150, 1, 1, '#22c55e', { isExit: true }),
+  ],
+  items: [
+    boat('RIB tube set', 760, 800, 260, 90, 0, 'in_progress', 'Tubing fit-out.'),
+    box('Fabric roll', 440, 240, 90, 70, 0, 'incoming'),
+    box('Lexan sheet', 440, 380, 90, 70, 0, 'incoming'),
+    box('Engine spares', 1075, 275, 90, 50, 0, 'in_progress'),
+    box('S/S stock', 100, 205, 90, 50, 0, 'ready'),
+    box('Pallet — ply', 600, 590, 120, 45, 0, 'incoming'),
+  ],
+}
+
 export interface Scenario {
   key: string
   label: string
@@ -135,6 +200,8 @@ const clone = (s: WorkshopState) => (): WorkshopState => {
 
 export const SCENARIOS: Scenario[] = [
   { key: 'boatyard', label: 'Boatyard', build: clone(boatyard) },
+  { key: 'redbay-hq', label: 'Redbay HQ', build: clone(redbayHQ) },
+  { key: 'redbay-stores', label: 'Redbay Stores', build: clone(redbayStores) },
   { key: 'garage', label: 'Car Garage', build: clone(garage) },
   { key: 'warehouse', label: 'Warehouse', build: clone(warehouse) },
 ]
