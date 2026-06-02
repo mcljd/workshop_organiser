@@ -15,6 +15,7 @@ interface Props {
   selectedId: string | null
   onSelect: (id: string | null) => void
   onMoveItem: (id: string, x: number, y: number) => void
+  onAddAt: (x: number, y: number) => void
 }
 
 type DragState =
@@ -28,7 +29,14 @@ type DragState =
  * panning on empty space. All maths is done in "world units" via the SVG
  * viewBox, so dragging stays accurate at any zoom level.
  */
-export function FloorCanvas({ floor, items, selectedId, onSelect, onMoveItem }: Props) {
+export function FloorCanvas({
+  floor,
+  items,
+  selectedId,
+  onSelect,
+  onMoveItem,
+  onAddAt,
+}: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null)
   const [view, setView] = useState<ViewBox>({ x: 0, y: 0, w: floor.width, h: floor.height })
   const drag = useRef<DragState>({ kind: 'none' })
@@ -109,6 +117,14 @@ export function FloorCanvas({ floor, items, selectedId, onSelect, onMoveItem }: 
     svgRef.current?.releasePointerCapture(e.pointerId)
   }
 
+  function onDoubleClick(e: React.MouseEvent<SVGSVGElement>) {
+    const target = e.target as Element
+    if (target === svgRef.current || target.id === 'floor-bg') {
+      const world = toWorld(e.clientX, e.clientY)
+      onAddAt(world.x, world.y)
+    }
+  }
+
   const viewBox = `${view.x} ${view.y} ${view.w} ${view.h}`
 
   return (
@@ -122,6 +138,7 @@ export function FloorCanvas({ floor, items, selectedId, onSelect, onMoveItem }: 
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerLeave={onPointerUp}
+      onDoubleClick={onDoubleClick}
     >
       <GridDefs />
 

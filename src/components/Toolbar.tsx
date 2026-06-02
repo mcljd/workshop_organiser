@@ -1,4 +1,6 @@
 import { useRef } from 'react'
+import type { ItemStatus } from '../types'
+import { STATUS_COLORS, STATUS_LABELS } from '../types'
 
 interface Props {
   workshopName: string
@@ -9,6 +11,8 @@ interface Props {
   hasFloorPlan: boolean
   onExport: () => void
   onImport: (text: string) => void
+  counts: Record<ItemStatus, number>
+  total: number
 }
 
 /** Top bar: workshop name plus the main actions. */
@@ -21,6 +25,8 @@ export function Toolbar({
   hasFloorPlan,
   onExport,
   onImport,
+  counts,
+  total,
 }: Props) {
   const planInput = useRef<HTMLInputElement | null>(null)
   const importInput = useRef<HTMLInputElement | null>(null)
@@ -51,6 +57,15 @@ export function Toolbar({
           onChange={(e) => onRename(e.target.value)}
           aria-label="Workshop name"
         />
+      </div>
+
+      <div className="summary" title={`${total} item${total === 1 ? '' : 's'}`}>
+        {(Object.keys(STATUS_LABELS) as ItemStatus[]).map((s) => (
+          <span key={s} className="summary-chip">
+            <span className="swatch" style={{ background: STATUS_COLORS[s] }} />
+            {counts[s]} {STATUS_LABELS[s]}
+          </span>
+        ))}
       </div>
 
       <div className="actions">

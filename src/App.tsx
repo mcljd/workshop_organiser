@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { FloorCanvas } from './components/FloorCanvas'
 import { Sidebar } from './components/Sidebar'
 import { Toolbar } from './components/Toolbar'
-import type { FloorItem, WorkshopState } from './types'
+import type { FloorItem, ItemStatus, WorkshopState } from './types'
 import {
   createDefaultState,
   exportState,
@@ -22,18 +22,45 @@ export default function App() {
     return () => clearTimeout(t)
   }, [state])
 
+  // Keyboard shortcuts: Delete removes the selected item, Escape deselects.
+  // Ignored while typing in an input so editing names/notes is unaffected.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
+        setState((s) => ({ ...s, items: s.items.filter((i) => i.id !== selectedId) }))
+        setSelectedId(null)
+      } else if (e.key === 'Escape') {
+        setSelectedId(null)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selectedId])
+
   const selectedItem = useMemo(
     () => state.items.find((i) => i.id === selectedId) ?? null,
     [state.items, selectedId],
   )
 
-  function addItem() {
+  const counts = useMemo(() => {
+    const base: Record<ItemStatus, number> = {
+      incoming: 0,
+      in_progress: 0,
+      ready: 0,
+      blocked: 0,
+    }
+    for (const item of state.items) base[item.status]++
+    return base
+  }, [state.items])
+
+  function addItemAt(x: number, y: number) {
     const item: FloorItem = {
       id: newId(),
       name: `Boat ${state.items.length + 1}`,
-      // Drop new items near the top-left of the floor.
-      x: state.floor.width * 0.2,
-      y: state.floor.height * 0.2,
+      x,
+      y,
       width: 180,
       height: 70,
       rotation: 0,
@@ -41,6 +68,12 @@ export default function App() {
     }
     setState((s) => ({ ...s, items: [...s.items, item] }))
     setSelectedId(item.id)
+  }
+
+  // Toolbar "Add boat" drops one near the top-left; double-click drops at the
+  // cursor (see FloorCanvas).
+  function addItem() {
+    addItemAt(state.floor.width * 0.2, state.floor.height * 0.2)
   }
 
   function moveItem(id: string, x: number, y: number) {
@@ -96,6 +129,8 @@ export default function App() {
         hasFloorPlan={!!state.floor.imageDataUrl}
         onExport={() => exportState(state)}
         onImport={importState}
+        counts={counts}
+        total={state.items.length}
       />
 
       <main className="workspace">
@@ -106,9 +141,11 @@ export default function App() {
             selectedId={selectedId}
             onSelect={setSelectedId}
             onMoveItem={moveItem}
+            onAddAt={addItemAt}
           />
           <div className="canvas-hint">
-            Drag items to move • Scroll to zoom • Drag empty space to pan
+            Drag to move • Double-click to add • Scroll to zoom • Drag empty space to
+            pan • Del to remove
             <button className="link" onClick={resetAll}>
               New workshop
             </button>

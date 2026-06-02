@@ -71,6 +71,21 @@ body {
   outline: none;
 }
 
+.summary {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.summary-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
 .actions {
   display: flex;
   align-items: center;
