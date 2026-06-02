@@ -103,27 +103,42 @@ export function Onboarding({ onClose, onBuild }: Props) {
         </button>
 
         {step === 0 && (
-          <div className="wizard-body">
-            <div className="wizard-kicker">Workshop Organiser</div>
-            <h1>Turn your space into a live 3D organiser</h1>
+          <div className="wizard-body hero">
+            <div className="hero-mark" aria-hidden>
+              Y
+            </div>
+            <div className="wizard-kicker">Yardly</div>
+            <h1>Your whole yard, live.</h1>
             <p className="lead">
-              Upload a floor plan and photos, answer a couple of questions, and we’ll
-              build an interactive 3D model of your workshop — then help you arrange it
-              and spot ways to work more efficiently.
+              Turn a floor plan, photo or aerial view into an interactive 3D map of your
+              site. Drag boats, vehicles and stock into place, spot what’s overdue or in the
+              way, and share one live link with the whole team.
             </p>
-            <div className="wizard-steps-preview">
-              <span>1 · Upload</span>
-              <span>2 · Tell us about it</span>
-              <span>3 · Get your 3D view</span>
+            <div className="hero-benefits">
+              <div className="benefit">
+                <strong>Set up in minutes</strong>
+                <span>From a photo — no CAD, no consultants.</span>
+              </div>
+              <div className="benefit">
+                <strong>See it in 3D</strong>
+                <span>Drag-and-drop the things that move.</span>
+              </div>
+              <div className="benefit">
+                <strong>Share it live</strong>
+                <span>Everyone sees the same yard, in real time.</span>
+              </div>
             </div>
             <div className="wizard-actions">
               <button className="primary" autoFocus onClick={() => setStep(1)}>
-                Build from my space
+                Build from my space →
               </button>
               <button className="ghost" onClick={onClose}>
-                Explore the live demo first
+                Explore a live demo
               </button>
             </div>
+            <p className="hero-foot">
+              Works on any device · no account needed to try · your data stays in your browser
+            </p>
           </div>
         )}
 
@@ -170,6 +185,7 @@ export function Onboarding({ onClose, onBuild }: Props) {
             <input
               ref={planInput}
               type="file"
+              accept="image/*"
               hidden
               onChange={(e) => {
                 const f = e.target.files?.[0]
@@ -180,6 +196,7 @@ export function Onboarding({ onClose, onBuild }: Props) {
             <input
               ref={photoInput}
               type="file"
+              accept="image/*"
               multiple
               hidden
               onChange={(e) => {

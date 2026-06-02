@@ -1,14 +1,16 @@
 :root {
-  --bg: #f1f5f9;
+  --bg: #f6f7fb;
   --panel: #ffffff;
-  --border: #e2e8f0;
-  --text: #0f172a;
-  --muted: #64748b;
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
+  --border: #e6e8f0;
+  --text: #0e1525;
+  --muted: #6b7488;
+  --accent: #4f46e5; /* Yardly indigo */
+  --accent-hover: #4338ca;
   --violet: #7c3aed;
+  --brand-grad: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color: var(--text);
+  -webkit-font-smoothing: antialiased;
 }
 
 * {
@@ -52,9 +54,18 @@ body {
 }
 
 .logo {
-  font-size: 26px;
-  color: var(--accent);
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--brand-grad);
+  color: #fff;
+  font-weight: 800;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
 }
 
 .brand-text {
@@ -62,15 +73,29 @@ body {
   flex-direction: column;
 }
 
+.brand-name {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding-left: 6px;
+}
+
+.brand-live {
+  color: #ef4444;
+  font-weight: 700;
+}
+
 .workshop-name {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   border: 1px solid transparent;
   background: transparent;
   border-radius: 6px;
-  padding: 2px 6px;
+  padding: 1px 6px;
   color: var(--text);
-  min-width: 180px;
+  min-width: 160px;
 }
 
 .workshop-name:hover,
@@ -135,17 +160,28 @@ body {
 
 button {
   font: inherit;
+  font-weight: 600;
   cursor: pointer;
   border: 1px solid var(--accent);
   background: var(--accent);
   color: #fff;
   padding: 8px 14px;
-  border-radius: 8px;
-  transition: background 0.15s ease, transform 0.05s ease;
+  border-radius: 9px;
+  transition: background 0.15s ease, transform 0.05s ease, box-shadow 0.15s ease;
 }
 
 button:hover {
   background: var(--accent-hover);
+}
+
+button.accent {
+  background: var(--brand-grad);
+  border: none;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+}
+
+button.accent:hover {
+  filter: brightness(1.05);
 }
 
 button:active {
@@ -162,12 +198,13 @@ button.ghost:hover {
 }
 
 button.accent {
-  background: var(--violet);
-  border-color: var(--violet);
+  background: var(--brand-grad);
+  border: none;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
 }
 
 button.accent:hover {
-  background: #6d28d9;
+  filter: brightness(1.05);
 }
 
 button.danger {
@@ -478,11 +515,83 @@ button.danger:hover {
 
 .wizard-kicker {
   font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--violet);
+  color: var(--accent);
   margin-bottom: 10px;
+}
+
+/* ---- Marketing hero (wizard step 0) ---- */
+.wizard-body.hero {
+  background: radial-gradient(1200px 400px at 20% -10%, #eef2ff 0%, #ffffff 60%);
+  border-radius: 18px;
+}
+
+.hero-mark {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  background: var(--brand-grad);
+  color: #fff;
+  font-weight: 800;
+  font-size: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.4);
+}
+
+.wizard-body.hero h1 {
+  font-size: 34px;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #0e1525 30%, #4f46e5 120%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-benefits {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 8px 0 24px;
+}
+
+.benefit {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.benefit strong {
+  font-size: 14px;
+}
+
+.benefit span {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.hero-foot {
+  margin: 16px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+@media (max-width: 560px) {
+  .hero-benefits {
+    grid-template-columns: 1fr;
+  }
+  .wizard-body.hero h1 {
+    font-size: 27px;
+  }
 }
 
 .wizard-body h1 {

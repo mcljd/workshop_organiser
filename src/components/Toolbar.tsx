@@ -71,16 +71,19 @@ export function Toolbar({
     <header className="toolbar">
       <div className="brand">
         <span className="logo" aria-hidden>
-          ◳
+          Y
         </span>
         <div className="brand-text">
+          <span className="brand-name">
+            Yardly
+            {liveId && <span className="brand-live" title="This site is live"> ● live</span>}
+          </span>
           <input
             className="workshop-name"
             value={workshopName}
             onChange={(e) => onRename(e.target.value)}
-            aria-label="Workshop name"
+            aria-label="Site name"
           />
-          <span className="brand-sub">Workshop Organiser · live demo</span>
         </div>
       </div>
 
@@ -178,7 +181,6 @@ export function Toolbar({
       <input
         ref={importInput}
         type="file"
-        accept="application/json"
         hidden
         onChange={(e) => {
           handleImportFile(e.target.files?.[0])
@@ -188,6 +190,7 @@ export function Toolbar({
       <input
         ref={aerialInput}
         type="file"
+        accept="image/*"
         hidden
         onChange={(e) => {
           readImage(e.target.files?.[0], onScanAerial)
@@ -208,6 +211,7 @@ export function Toolbar({
       <input
         ref={objectsInput}
         type="file"
+        accept="image/*"
         hidden
         onChange={(e) => {
           readImage(e.target.files?.[0], onFindObjects)

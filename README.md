@@ -1,4 +1,4 @@
-# Workshop Organiser
+# Yardly — your whole yard, live
 
 Turn a business's floor plan into an interactive, top-down **digital twin** of
 their space — then drag the things that move (boats, vehicles, jobs, pallets)
