@@ -45,10 +45,14 @@ const SEEN_KEY = 'workshop-organiser:onboarded'
 
 // Saved label sets so Smart find/scan is one tap per industry.
 const OBJECT_PRESETS = [
-  { name: 'Boatyard', labels: 'boat, trailer, car, forklift' },
-  { name: 'Car lot', labels: 'car, van, truck, trailer' },
-  { name: 'Plant hire', labels: 'excavator, forklift, generator, container, trailer' },
-  { name: 'Warehouse', labels: 'pallet, forklift, truck, shipping container' },
+  {
+    name: 'Boatyard',
+    labels: 'boat, rib, pontoon boat, jet ski, kayak, dinghy, outboard engine, boat trailer, forklift',
+  },
+  { name: 'Marina', labels: 'boat, yacht, rib, dinghy, jet ski, pontoon, cradle' },
+  { name: 'Car lot', labels: 'car, van, truck, trailer, caravan' },
+  { name: 'Plant hire', labels: 'excavator, forklift, generator, shipping container, trailer, digger' },
+  { name: 'Warehouse', labels: 'pallet, forklift, truck, shipping container, crate' },
 ]
 const BUILDING_PRESETS = [
   { name: 'Sheds', labels: 'shed, building, unit' },
