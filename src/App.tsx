@@ -10,6 +10,7 @@ import { analyse } from './analyse'
 import { optimiseLayout } from './optimise'
 import { analyzeFloorPlan } from './vision'
 import { detectBuildings, recordFeedback, type Building, type BuildingScan } from './buildings'
+import { detectObjectsInPhoto } from './objectModel'
 import { SCENARIOS } from './scenarios'
 import type { FloorItem, ItemStatus, WorkshopState } from './types'
 import {
@@ -34,6 +35,7 @@ export default function App() {
   const [showWizard, setShowWizard] = useState(() => !localStorage.getItem(SEEN_KEY))
   const [scan, setScan] = useState<BuildingScan | null>(null)
   const [showAdd, setShowAdd] = useState(false)
+  const [aiBusy, setAiBusy] = useState<string | null>(null)
 
   // Auto-save on every change (debounced a touch to avoid thrashing storage).
   useEffect(() => {
@@ -108,7 +110,45 @@ export default function App() {
 
   // --- Aerial scan: detect buildings, then let the user review/correct. ---
   async function scanAerial(dataUrl: string) {
-    setScan(await detectBuildings(dataUrl))
+    setAiBusy('Scanning for buildings…')
+    try {
+      setScan(await detectBuildings(dataUrl))
+    } finally {
+      setAiBusy(null)
+    }
+  }
+
+  // --- AI model: detect boats/vehicles in a photo and drop them on the floor. ---
+  async function findObjectsAI(dataUrl: string) {
+    setAiBusy('Loading AI model & finding objects…')
+    try {
+      const res = await detectObjectsInPhoto(dataUrl)
+      if (res.objects.length === 0) {
+        alert('The AI model ran but found no boats or vehicles in this photo.')
+        return
+      }
+      const { width: FW, height: FH } = state.floor
+      const now = new Date().toISOString()
+      const found = res.objects.map((o) => ({
+        id: newId(),
+        name: o.name,
+        x: o.cx * FW,
+        y: o.cy * FH,
+        width: Math.max(40, o.w * FW),
+        height: Math.max(28, o.h * FH),
+        rotation: 0,
+        status: 'incoming' as const,
+        shape: o.shape,
+        arrivedAt: now,
+      }))
+      setState((s) => ({ ...s, items: [...s.items, ...found] }))
+    } catch {
+      alert(
+        'Could not load the AI model. It downloads on first use, so this needs an internet connection.',
+      )
+    } finally {
+      setAiBusy(null)
+    }
   }
 
   const SHED_COLORS = [
@@ -264,6 +304,7 @@ export default function App() {
         onLoadScenario={loadScenario}
         onNewFromSpace={() => setShowWizard(true)}
         onScanAerial={scanAerial}
+        onFindObjects={findObjectsAI}
         onDetect={detectFromPlan}
         hasPlan={!!state.floor.imageDataUrl}
         onExport={() => exportState(state)}
@@ -311,6 +352,12 @@ export default function App() {
         </aside>
       </main>
 
+      {aiBusy && (
+        <div className="ai-busy" role="status" aria-live="assertive">
+          <div className="spinner" />
+          <span>{aiBusy}</span>
+        </div>
+      )}
       {showWizard && <Onboarding onClose={closeWizard} onBuild={finishWizard} />}
       {scan && (
         <BuildingReview scan={scan} onConfirm={confirmScan} onCancel={() => setScan(null)} />

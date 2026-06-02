@@ -10,6 +10,7 @@ interface Props {
   onLoadScenario: (key: string) => void
   onNewFromSpace: () => void
   onScanAerial: (dataUrl: string) => void
+  onFindObjects: (dataUrl: string) => void
   onDetect: () => void
   hasPlan: boolean
   onExport: () => void
@@ -25,6 +26,7 @@ export function Toolbar({
   onLoadScenario,
   onNewFromSpace,
   onScanAerial,
+  onFindObjects,
   onDetect,
   hasPlan,
   onExport,
@@ -33,11 +35,13 @@ export function Toolbar({
 }: Props) {
   const importInput = useRef<HTMLInputElement | null>(null)
   const aerialInput = useRef<HTMLInputElement | null>(null)
+  const phoneInput = useRef<HTMLInputElement | null>(null)
+  const objectsInput = useRef<HTMLInputElement | null>(null)
 
-  function handleAerial(file: File | undefined) {
+  function readImage(file: File | undefined, cb: (dataUrl: string) => void) {
     if (!file) return
     const reader = new FileReader()
-    reader.onload = () => onScanAerial(String(reader.result))
+    reader.onload = () => cb(String(reader.result))
     reader.readAsDataURL(file)
   }
 
@@ -104,6 +108,12 @@ export function Toolbar({
         <button className="ghost" onClick={() => aerialInput.current?.click()} title="Detect buildings from an aerial/satellite image">
           🛰 Scan aerial
         </button>
+        <button className="ghost" onClick={() => phoneInput.current?.click()} title="Take an overhead photo from a high spot and detect the buildings">
+          📷 Scan (phone)
+        </button>
+        <button className="ghost" onClick={() => objectsInput.current?.click()} title="Use the AI model to find boats and vehicles in a photo">
+          🧠 Find objects
+        </button>
         {hasPlan && (
           <button className="ghost" onClick={onDetect} title="Re-read the floor plan and add detected doors and objects">
             ⌖ Re-read plan
@@ -136,7 +146,28 @@ export function Toolbar({
         accept="image/*"
         hidden
         onChange={(e) => {
-          handleAerial(e.target.files?.[0])
+          readImage(e.target.files?.[0], onScanAerial)
+          e.target.value = ''
+        }}
+      />
+      <input
+        ref={phoneInput}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        hidden
+        onChange={(e) => {
+          readImage(e.target.files?.[0], onScanAerial)
+          e.target.value = ''
+        }}
+      />
+      <input
+        ref={objectsInput}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={(e) => {
+          readImage(e.target.files?.[0], onFindObjects)
           e.target.value = ''
         }}
       />
