@@ -15,7 +15,7 @@ import { detectObjectsInPhoto } from './objectModel'
 import { SCENARIOS } from './scenarios'
 import type { FloorItem, ItemStatus, MoveKind, WorkshopState } from './types'
 import { STATUS_LABELS } from './types'
-import { zoneOf } from './manager'
+import { allTags as collectTags, zoneOf } from './manager'
 import {
   exportState,
   loadState,
@@ -90,6 +90,7 @@ export default function App() {
   )
 
   const analysis = useMemo(() => analyse(state), [state])
+  const tagList = useMemo(() => collectTags(state), [state])
 
   const counts = useMemo(() => {
     const base: Record<ItemStatus, number> = {
@@ -411,6 +412,7 @@ export default function App() {
           <Sidebar
             item={selectedItem}
             itemCount={state.items.length}
+            allTags={tagList}
             onChange={patchSelected}
             onDelete={deleteSelected}
           />

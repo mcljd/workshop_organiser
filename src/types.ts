@@ -22,6 +22,8 @@ export interface FloorItem {
   /** How the item is drawn on the floor. */
   shape: ItemShape
   notes?: string
+  /** Free-form, user-defined tags (e.g. customer, job type, priority). */
+  tags?: string[]
   /** When the item arrived on site (ISO). Drives "days in yard". */
   arrivedAt?: string
   /** Target completion / collection / launch date (ISO date). */

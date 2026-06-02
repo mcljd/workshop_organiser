@@ -148,7 +148,6 @@ export function Toolbar({
       <input
         ref={aerialInput}
         type="file"
-        accept="image/*"
         hidden
         onChange={(e) => {
           readImage(e.target.files?.[0], onScanAerial)
@@ -169,7 +168,6 @@ export function Toolbar({
       <input
         ref={objectsInput}
         type="file"
-        accept="image/*"
         hidden
         onChange={(e) => {
           readImage(e.target.files?.[0], onFindObjects)

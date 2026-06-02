@@ -1,7 +1,15 @@
 import { useMemo, useState } from 'react'
 import type { WorkshopState } from '../types'
 import { STATUS_COLORS, STATUS_LABELS } from '../types'
-import { dueLabel, dueState, dwellDays, isFixture, managerKPIs, zoneOccupancy } from '../manager'
+import {
+  dueLabel,
+  dueState,
+  dwellDays,
+  isFixture,
+  managerKPIs,
+  tagColor,
+  zoneOccupancy,
+} from '../manager'
 
 interface Props {
   state: WorkshopState
@@ -27,7 +35,8 @@ export function ManagerPanel({ state, selectedId, onSelect }: Props) {
         !isFixture(i) &&
         (!q ||
           i.name.toLowerCase().includes(q) ||
-          STATUS_LABELS[i.status].toLowerCase().includes(q)),
+          STATUS_LABELS[i.status].toLowerCase().includes(q) ||
+          (i.tags ?? []).some((t) => t.toLowerCase().includes(q))),
     )
     const dueRank = (id: string) => {
       const it = state.items.find((x) => x.id === id)!
@@ -92,6 +101,20 @@ export function ManagerPanel({ state, selectedId, onSelect }: Props) {
             >
               <span className="job-dot" style={{ background: STATUS_COLORS[j.status] }} />
               <span className="job-name">{j.name}</span>
+              {(j.tags ?? []).slice(0, 2).map((t) => (
+                <button
+                  key={t}
+                  className="job-tag"
+                  style={{ background: tagColor(t) }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setQuery(t)
+                  }}
+                  title={`Filter by ${t}`}
+                >
+                  {t}
+                </button>
+              ))}
               <span className="job-dwell">{dwellDays(j)}d</span>
               {j.dueDate && <span className={`job-due due-${ds}`}>{dueLabel(j)}</span>}
             </li>

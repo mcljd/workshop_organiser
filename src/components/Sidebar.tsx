@@ -1,10 +1,12 @@
+import { useState } from 'react'
 import type { FloorItem, ItemStatus } from '../types'
 import { STATUS_LABELS } from '../types'
-import { dueLabel, dueState, dwellDays } from '../manager'
+import { dueLabel, dueState, dwellDays, tagColor } from '../manager'
 
 interface Props {
   item: FloorItem | null
   itemCount: number
+  allTags: string[]
   onChange: (patch: Partial<FloorItem>) => void
   onDelete: () => void
 }
@@ -12,7 +14,19 @@ interface Props {
 const STATUSES: ItemStatus[] = ['incoming', 'in_progress', 'ready', 'blocked']
 
 /** Edit panel for the currently selected item. */
-export function Sidebar({ item, itemCount, onChange, onDelete }: Props) {
+export function Sidebar({ item, itemCount, allTags, onChange, onDelete }: Props) {
+  const [tagInput, setTagInput] = useState('')
+
+  function addTag(raw: string) {
+    const t = raw.trim()
+    if (!t || !item) return
+    const tags = item.tags ?? []
+    if (!tags.some((x) => x.toLowerCase() === t.toLowerCase())) {
+      onChange({ tags: [...tags, t] })
+    }
+    setTagInput('')
+  }
+
   if (!item) {
     return (
       <div className="sidebar-empty">
@@ -115,6 +129,42 @@ export function Sidebar({ item, itemCount, onChange, onDelete }: Props) {
           placeholder="Job number, customer, work needed…"
         />
       </label>
+
+      <div className="field">
+        <span>Tags</span>
+        <div className="tag-edit">
+          {(item.tags ?? []).map((t) => (
+            <span key={t} className="tag" style={{ background: tagColor(t) }}>
+              {t}
+              <button
+                onClick={() => onChange({ tags: (item.tags ?? []).filter((x) => x !== t) })}
+                aria-label={`Remove tag ${t}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          <input
+            className="tag-input"
+            list="all-tags"
+            value={tagInput}
+            placeholder="Add tag…"
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                addTag(tagInput)
+              }
+            }}
+            onBlur={() => tagInput && addTag(tagInput)}
+          />
+          <datalist id="all-tags">
+            {allTags.map((t) => (
+              <option key={t} value={t} />
+            ))}
+          </datalist>
+        </div>
+      </div>
 
       <button className="danger" onClick={onDelete}>
         Delete item

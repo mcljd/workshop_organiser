@@ -170,7 +170,6 @@ export function Onboarding({ onClose, onBuild }: Props) {
             <input
               ref={planInput}
               type="file"
-              accept="image/*"
               hidden
               onChange={(e) => {
                 const f = e.target.files?.[0]
@@ -181,7 +180,6 @@ export function Onboarding({ onClose, onBuild }: Props) {
             <input
               ref={photoInput}
               type="file"
-              accept="image/*"
               multiple
               hidden
               onChange={(e) => {

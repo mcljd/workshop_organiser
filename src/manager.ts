@@ -5,6 +5,20 @@ import type { FloorItem, ItemStatus, WorkshopState, Zone } from './types'
 
 const DAY = 86_400_000
 
+/** A stable, distinct colour for a tag, derived from its text. */
+export function tagColor(tag: string): string {
+  let h = 0
+  for (let i = 0; i < tag.length; i++) h = (h * 31 + tag.charCodeAt(i)) % 360
+  return `hsl(${h} 60% 42%)`
+}
+
+/** All unique tags currently in use, sorted — for autocomplete. */
+export function allTags(state: WorkshopState): string[] {
+  const set = new Set<string>()
+  for (const i of state.items) for (const t of i.tags ?? []) set.add(t)
+  return [...set].sort((a, b) => a.localeCompare(b))
+}
+
 export function dwellDays(item: FloorItem): number {
   if (!item.arrivedAt) return 0
   return Math.max(0, Math.floor((Date.now() - new Date(item.arrivedAt).getTime()) / DAY))
