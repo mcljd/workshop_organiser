@@ -212,6 +212,9 @@ export function BuildingReview({ scan, onConfirm, onCancel }: Props) {
                 </button>
                 <span className="review-num">{i + 1}</span>
                 <input value={b.name} onChange={(e) => rename(b.id, e.target.value)} />
+                <span className="review-size" title="Rough size from the site-width scale">
+                  ≈{Math.round(b.w * metres)}×{Math.round((b.h * metres) / scan.aspect)}m
+                </span>
                 <span className="conf" title={`Confidence ${Math.round(b.score * 100)}%`}>
                   <span style={{ width: `${Math.round(b.score * 100)}%` }} />
                 </span>
