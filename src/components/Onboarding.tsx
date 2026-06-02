@@ -2,10 +2,12 @@ import { useRef, useState } from 'react'
 import type { WorkshopState } from '../types'
 import {
   generateWorkshop,
+  layoutItems,
   type SpaceSize,
   type SpaceType,
   type WizardAnswers,
 } from '../generate'
+import { analyzeFloorPlan } from '../vision'
 
 interface Props {
   onClose: () => void
@@ -46,10 +48,38 @@ export function Onboarding({ onClose, onBuild }: Props) {
     r.readAsDataURL(file)
   }
 
-  function build() {
+  const [building, setBuilding] = useState('Building your 3D workshop…')
+
+  async function build() {
     setStep(3)
-    // Brief "analysing" beat so it feels like work is happening.
-    setTimeout(() => onBuild(generateWorkshop({ ...answers, floorImage })), 900)
+    // If they uploaded a floor plan, read it with the in-browser vision engine
+    // and place the detected doors/objects; otherwise use the template.
+    if (floorImage) {
+      try {
+        setBuilding('Reading your floor plan…')
+        const det = await analyzeFloorPlan(floorImage)
+        const isBoat = answers.type === 'boatyard'
+        const noun = answers.noun.trim() || (isBoat ? 'Boat' : 'Item')
+        const boats = layoutItems(
+          answers.count,
+          noun,
+          isBoat,
+          det.floorWidth,
+          det.floorHeight,
+        )
+        onBuild({
+          version: 2,
+          name: answers.name.trim() || 'My Workshop',
+          floor: { imageDataUrl: floorImage, width: det.floorWidth, height: det.floorHeight },
+          zones: det.zones,
+          items: [...det.items, ...boats],
+        })
+        return
+      } catch {
+        // Reading failed — fall back to a generated template.
+      }
+    }
+    onBuild(generateWorkshop({ ...answers, floorImage }))
   }
 
   return (
@@ -245,8 +275,12 @@ export function Onboarding({ onClose, onBuild }: Props) {
         {step === 3 && (
           <div className="wizard-body building">
             <div className="spinner" />
-            <h1>Building your 3D workshop…</h1>
-            <p className="lead">Placing zones and items from your answers.</p>
+            <h1>{building}</h1>
+            <p className="lead">
+              {floorImage
+                ? 'Finding walls, doors and objects in your plan, then placing them in 3D.'
+                : 'Placing zones and items from your answers.'}
+            </p>
           </div>
         )}
       </div>

@@ -277,6 +277,8 @@ function Item3D({
     >
       {item.shape === 'boat' ? (
         <Boat length={item.width} beam={item.height} height={hullH} color={color} />
+      ) : item.shape === 'door' ? (
+        <Door length={item.width} color={color} />
       ) : (
         <Vehicle length={item.width} width={item.height} height={hullH} color={color} />
       )}
@@ -359,6 +361,26 @@ function Boat({
         castShadow
       >
         <meshStandardMaterial color="#f8fafc" roughness={0.4} />
+      </RoundedBox>
+    </group>
+  )
+}
+
+/** A door / opening: an upright frame straddling the wall line. */
+function Door({ length, color }: { length: number; color: string }) {
+  const h = 90
+  const post = 10
+  return (
+    <group>
+      {/* Two posts + a lintel, like a door frame. */}
+      <RoundedBox args={[post, h, post]} radius={2} position={[-length / 2, h / 2, 0]} castShadow>
+        <meshStandardMaterial color={color} roughness={0.6} />
+      </RoundedBox>
+      <RoundedBox args={[post, h, post]} radius={2} position={[length / 2, h / 2, 0]} castShadow>
+        <meshStandardMaterial color={color} roughness={0.6} />
+      </RoundedBox>
+      <RoundedBox args={[length + post, post, post]} radius={2} position={[0, h, 0]} castShadow>
+        <meshStandardMaterial color={color} roughness={0.6} />
       </RoundedBox>
     </group>
   )

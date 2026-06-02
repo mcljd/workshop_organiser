@@ -23,6 +23,11 @@ coming in and out and you need an at-a-glance map of what's where.
 - **Onboarding wizard**: upload a floor plan + photos, answer a few questions,
   and it **builds your 3D view**. Uploaded floor plans become the textured 3D
   floor.
+- **In-browser floor-plan reader** (no API, no key, no model download): classical
+  computer vision (`src/vision.ts`) reads the uploaded plan on a canvas — Otsu
+  threshold → wall mask, perimeter-gap detection for **doors/openings**, and
+  morphological erosion + connected components for solid **objects** — then
+  places them in 3D aligned to the plan. Re-run any time with **Re-read plan**.
 - Realistic **pre-built demos**: Boatyard (Redbay-style), Car Garage, Warehouse.
 - **Drag** boat-hull / vehicle items around the floor; **click** to edit name,
   status, size, rotation, notes.

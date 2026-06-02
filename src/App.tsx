@@ -5,6 +5,7 @@ import { Toolbar } from './components/Toolbar'
 import { InsightsPanel } from './components/InsightsPanel'
 import { Onboarding } from './components/Onboarding'
 import { analyse } from './analyse'
+import { analyzeFloorPlan } from './vision'
 import { SCENARIOS } from './scenarios'
 import type { FloorItem, ItemStatus, WorkshopState } from './types'
 import {
@@ -107,6 +108,31 @@ export default function App() {
     setSelectedId(null)
   }
 
+  async function detectFromPlan() {
+    const img = state.floor.imageDataUrl
+    if (!img) return
+    const det = await analyzeFloorPlan(img)
+    // Scale detection (sized to its own aspect) onto the current floor.
+    const sx = state.floor.width / det.floorWidth
+    const sy = state.floor.height / det.floorHeight
+    const found = det.items.map((it) => ({
+      ...it,
+      id: newId(),
+      x: it.x * sx,
+      y: it.y * sy,
+      width: it.width * sx,
+      height: it.height * sy,
+    }))
+    // Replace any previously-detected doors so repeated reads don't stack them.
+    setState((s) => ({
+      ...s,
+      items: [...s.items.filter((i) => i.shape !== 'door'), ...found],
+    }))
+    if (det.summary.doors + det.summary.objects === 0) {
+      alert('No clear doors or objects found in this image. A line floor plan works best.')
+    }
+  }
+
   function importState(text: string) {
     const imported = parseImportedState(text)
     if (!imported) {
@@ -137,6 +163,8 @@ export default function App() {
         onAddItem={addItem}
         onLoadScenario={loadScenario}
         onNewFromSpace={() => setShowWizard(true)}
+        onDetect={detectFromPlan}
+        hasPlan={!!state.floor.imageDataUrl}
         onExport={() => exportState(state)}
         onImport={importState}
         counts={counts}

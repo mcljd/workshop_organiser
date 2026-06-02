@@ -4,7 +4,7 @@
 
 export type ItemStatus = 'incoming' | 'in_progress' | 'ready' | 'blocked'
 
-export type ItemShape = 'boat' | 'box'
+export type ItemShape = 'boat' | 'box' | 'door'
 
 export interface FloorItem {
   id: string

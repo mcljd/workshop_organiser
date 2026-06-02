@@ -9,6 +9,8 @@ interface Props {
   onAddItem: () => void
   onLoadScenario: (key: string) => void
   onNewFromSpace: () => void
+  onDetect: () => void
+  hasPlan: boolean
   onExport: () => void
   onImport: (text: string) => void
   counts: Record<ItemStatus, number>
@@ -21,6 +23,8 @@ export function Toolbar({
   onAddItem,
   onLoadScenario,
   onNewFromSpace,
+  onDetect,
+  hasPlan,
   onExport,
   onImport,
   counts,
@@ -85,6 +89,11 @@ export function Toolbar({
         <button className="accent" onClick={onNewFromSpace}>
           ✦ Build from my space
         </button>
+        {hasPlan && (
+          <button className="ghost" onClick={onDetect} title="Re-read the floor plan and add detected doors and objects">
+            ⌖ Re-read plan
+          </button>
+        )}
 
         <span className="divider" />
 

@@ -63,7 +63,10 @@ function centreInZone(item: FloorItem, zone: Zone): boolean {
 }
 
 export function analyse(state: WorkshopState): Analysis {
-  const { items, zones, floor } = state
+  const { zones, floor } = state
+  // Doors and other detected fixtures aren't movable jobs — exclude them so
+  // the workflow insights stay about the things that actually move.
+  const items = state.items.filter((i) => i.shape !== 'door')
   const insights: Insight[] = []
 
   // --- Overlaps: two items sharing floor space is wasted/blocked time. ---

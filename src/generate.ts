@@ -51,18 +51,40 @@ export function generateWorkshop(a: WizardAnswers): WorkshopState {
     z('Ready / Dispatch', 0, h * 0.82, w, h * 0.18, '#22c55e', { isExit: true }),
   ]
 
-  // Lay items out in a grid inside the working area.
-  const count = Math.max(1, Math.min(40, Math.round(a.count) || 6))
-  const area = { x: w * 0.06, y: h * 0.36, w: w * 0.88, h: h * 0.36 }
-  const cols = Math.ceil(Math.sqrt(count * (area.w / area.h)))
-  const rows = Math.ceil(count / cols)
+  const items = layoutItems(a.count, noun, isBoat, w, h)
+
+  return {
+    version: 2,
+    name: a.name.trim() || 'My Workshop',
+    floor: { imageDataUrl: a.floorImage, width: w, height: h },
+    zones,
+    items,
+  }
+}
+
+/**
+ * Lays out `count` movable items (boats/vehicles/pallets) in a tidy grid
+ * across the lower working area of a floor of the given dimensions. Reused
+ * both by the template generator and after a floor plan is read from an image.
+ */
+export function layoutItems(
+  count: number,
+  noun: string,
+  isBoat: boolean,
+  w: number,
+  h: number,
+): FloorItem[] {
+  const n = Math.max(1, Math.min(40, Math.round(count) || 6))
+  const area = { x: w * 0.06, y: h * 0.5, w: w * 0.88, h: h * 0.42 }
+  const cols = Math.ceil(Math.sqrt(n * (area.w / area.h)))
+  const rows = Math.ceil(n / cols)
   const cellW = area.w / cols
   const cellH = area.h / rows
-  const itemW = Math.min(cellW * 0.7, isBoat ? 220 : 150)
+  const itemW = Math.min(cellW * 0.72, isBoat ? 220 : 150)
   const itemH = Math.min(cellH * 0.6, isBoat ? 80 : 90)
 
   const items: FloorItem[] = []
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < n; i++) {
     const col = i % cols
     const row = Math.floor(i / cols)
     items.push({
@@ -77,14 +99,7 @@ export function generateWorkshop(a: WizardAnswers): WorkshopState {
       shape: isBoat ? 'boat' : 'box',
     })
   }
-
-  return {
-    version: 2,
-    name: a.name.trim() || 'My Workshop',
-    floor: { imageDataUrl: a.floorImage, width: w, height: h },
-    zones,
-    items,
-  }
+  return items
 }
 
 function z(
