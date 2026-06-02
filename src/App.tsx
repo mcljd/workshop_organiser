@@ -5,6 +5,7 @@ import { InsightsPanel } from './components/InsightsPanel'
 import { ManagerPanel } from './components/ManagerPanel'
 import { Onboarding } from './components/Onboarding'
 import { BuildingReview } from './components/BuildingReview'
+import { ZoneEditor } from './components/ZoneEditor'
 import { AddItemDialog } from './components/AddItemDialog'
 import { analyse } from './analyse'
 import { optimiseLayout } from './optimise'
@@ -37,6 +38,7 @@ export default function App() {
   const [showWizard, setShowWizard] = useState(() => !localStorage.getItem(SEEN_KEY))
   const [scan, setScan] = useState<BuildingScan | null>(null)
   const [showAdd, setShowAdd] = useState(false)
+  const [showZones, setShowZones] = useState(false)
   const [aiBusy, setAiBusy] = useState<string | null>(null)
 
   // Auto-save on every change (debounced a touch to avoid thrashing storage).
@@ -221,6 +223,8 @@ export default function App() {
       items,
       history: [{ id: newId(), at: new Date().toISOString(), kind: 'scan', text: summary }],
     }))
+    // Drop straight into the shed editor so they can tidy areas before adding items.
+    setShowZones(true)
   }
 
   function logEvent(kind: MoveKind, text: string) {
@@ -364,6 +368,7 @@ export default function App() {
         onNewFromSpace={() => setShowWizard(true)}
         onScanAerial={scanAerial}
         onFindObjects={findObjectsAI}
+        onEditZones={() => setShowZones(true)}
         onDetect={detectFromPlan}
         hasPlan={!!state.floor.imageDataUrl}
         onExport={() => exportState(state)}
@@ -421,6 +426,18 @@ export default function App() {
       {showWizard && <Onboarding onClose={closeWizard} onBuild={finishWizard} />}
       {scan && (
         <BuildingReview scan={scan} onConfirm={confirmScan} onCancel={() => setScan(null)} />
+      )}
+      {showZones && (
+        <ZoneEditor
+          floor={state.floor}
+          zones={state.zones}
+          onDone={(zones) => {
+            setState((s) => ({ ...s, zones }))
+            setShowZones(false)
+            logEvent('edit', `Edited sheds & areas (${zones.length})`)
+          }}
+          onCancel={() => setShowZones(false)}
+        />
       )}
       {showAdd && (
         <AddItemDialog

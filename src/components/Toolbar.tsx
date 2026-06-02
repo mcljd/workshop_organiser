@@ -11,6 +11,7 @@ interface Props {
   onNewFromSpace: () => void
   onScanAerial: (dataUrl: string) => void
   onFindObjects: (dataUrl: string) => void
+  onEditZones: () => void
   onDetect: () => void
   hasPlan: boolean
   onExport: () => void
@@ -27,6 +28,7 @@ export function Toolbar({
   onNewFromSpace,
   onScanAerial,
   onFindObjects,
+  onEditZones,
   onDetect,
   hasPlan,
   onExport,
@@ -101,6 +103,9 @@ export function Toolbar({
 
         <button onClick={onAddItem} aria-label="Add a new item to the floor">
           + Add item
+        </button>
+        <button className="ghost" onClick={onEditZones} title="Draw, move, rename sheds and areas">
+          ✏️ Edit sheds
         </button>
         <button className="accent" onClick={onNewFromSpace}>
           ✦ Build from my space

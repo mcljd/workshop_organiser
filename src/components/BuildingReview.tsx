@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import type { Building, BuildingScan } from '../buildings'
+import { loadLearned } from '../buildings'
 
 interface Props {
   scan: BuildingScan
@@ -82,6 +83,9 @@ export function BuildingReview({ scan, onConfirm, onCancel }: Props) {
               Tick the buildings to keep, ✗ the wrong ones, rename them, or drag on the
               image to add one I missed. I'll learn from your choices.
             </p>
+            {loadLearned().n > 0 && (
+              <p className="learned">🧠 Tuned from {loadLearned().n} of your past scan{loadLearned().n === 1 ? '' : 's'}</p>
+            )}
           </div>
           <button className="wizard-close" onClick={onCancel} aria-label="Cancel">
             ✕

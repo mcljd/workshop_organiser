@@ -54,7 +54,7 @@ export interface FloorPlan {
   metresWide?: number
 }
 
-export type MoveKind = 'move' | 'status' | 'add' | 'remove' | 'optimise' | 'scan'
+export type MoveKind = 'move' | 'status' | 'add' | 'remove' | 'optimise' | 'scan' | 'edit'
 
 export interface MoveEvent {
   id: string
