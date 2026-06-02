@@ -1,4 +1,4 @@
-import type { FloorItem, ItemStatus, WorkshopState } from './types'
+import type { FloorItem, ItemStatus, WorkshopState, Zone } from './types'
 
 // Manager-facing logic: how long something has been on site (dwell), whether
 // it's due / overdue, and the headline KPIs a supervisor runs their day from.
@@ -64,6 +64,37 @@ export function managerKPIs(state: WorkshopState): KPIs {
     overdue,
     avgDwell: jobs.length ? Math.round(dwellSum / jobs.length) : 0,
   }
+}
+
+export function zoneOf(item: FloorItem, zones: Zone[]): Zone | null {
+  // The last matching zone wins (smaller bays drawn over larger areas).
+  let found: Zone | null = null
+  for (const z of zones) {
+    if (item.x >= z.x && item.x <= z.x + z.width && item.y >= z.y && item.y <= z.y + z.height) {
+      found = z
+    }
+  }
+  return found
+}
+
+export interface ZoneLoad {
+  zone: Zone
+  count: number
+  fill: number // used footprint / zone area, 0..1
+  over: boolean
+}
+
+/** Per-zone occupancy: how many jobs sit in each area and how full it is. */
+export function zoneOccupancy(state: WorkshopState): ZoneLoad[] {
+  const jobs = state.items.filter((i) => !isFixture(i))
+  return state.zones
+    .filter((z) => !z.isAisle)
+    .map((zone) => {
+      const inside = jobs.filter((j) => zoneOf(j, state.zones)?.id === zone.id)
+      const used = inside.reduce((s, j) => s + j.width * j.height, 0)
+      const fill = Math.min(1.5, used / Math.max(1, zone.width * zone.height))
+      return { zone, count: inside.length, fill, over: fill > 0.85 }
+    })
 }
 
 const ARRIVED_BIAS: Record<ItemStatus, number> = {

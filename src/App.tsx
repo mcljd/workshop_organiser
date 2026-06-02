@@ -12,7 +12,9 @@ import { analyzeFloorPlan } from './vision'
 import { detectBuildings, recordFeedback, type Building, type BuildingScan } from './buildings'
 import { detectObjectsInPhoto } from './objectModel'
 import { SCENARIOS } from './scenarios'
-import type { FloorItem, ItemStatus, WorkshopState } from './types'
+import type { FloorItem, ItemStatus, MoveKind, WorkshopState } from './types'
+import { STATUS_LABELS } from './types'
+import { zoneOf } from './manager'
 import {
   exportState,
   loadState,
@@ -106,6 +108,7 @@ export default function App() {
     }))
     setSelectedId(item.id)
     setShowAdd(false)
+    logEvent('add', `Added ${item.name}`)
   }
 
   // --- Aerial scan: detect buildings, then let the user review/correct. ---
@@ -162,30 +165,79 @@ export default function App() {
     '#64748b',
   ]
 
-  function confirmScan(buildings: Building[], metresWide: number) {
+  async function confirmScan(buildings: Building[], metresWide: number, alsoObjects: boolean) {
     if (!scan) return
     recordFeedback(buildings) // learn from keeps vs drops
+    const imageDataUrl = scan.imageDataUrl
+    const aspect = scan.aspect
     const FW = 1200
-    const FH = Math.round(FW / scan.aspect)
-    const zones = buildings
-      .filter((b) => b.keep)
-      .map((b, i) => ({
-        id: newId(),
-        name: b.name,
-        x: b.x * FW,
-        y: b.y * FH,
-        width: b.w * FW,
-        height: b.h * FH,
-        color: SHED_COLORS[i % SHED_COLORS.length],
-      }))
+    const FH = Math.round(FW / aspect)
+    const kept = buildings.filter((b) => b.keep)
+    const zones = kept.map((b, i) => ({
+      id: newId(),
+      name: b.name,
+      x: b.x * FW,
+      y: b.y * FH,
+      width: b.w * FW,
+      height: b.h * FH,
+      color: SHED_COLORS[i % SHED_COLORS.length],
+    }))
+    setScan(null)
+    setSelectedId(null)
+
+    // Optionally run the AI model on the same overhead shot to place objects.
+    let items: FloorItem[] = []
+    if (alsoObjects) {
+      setAiBusy('Finding boats & vehicles in the photo…')
+      try {
+        const res = await detectObjectsInPhoto(imageDataUrl)
+        const now = new Date().toISOString()
+        items = res.objects.map((o) => ({
+          id: newId(),
+          name: o.name,
+          x: o.cx * FW,
+          y: o.cy * FH,
+          width: Math.max(40, o.w * FW),
+          height: Math.max(28, o.h * FH),
+          rotation: 0,
+          status: 'incoming' as const,
+          shape: o.shape,
+          arrivedAt: now,
+        }))
+      } catch {
+        alert('Buildings added, but the object model could not load (needs internet on first use).')
+      } finally {
+        setAiBusy(null)
+      }
+    }
+
+    const summary = `Scanned site — ${zones.length} building${zones.length === 1 ? '' : 's'}${
+      items.length ? `, ${items.length} object${items.length === 1 ? '' : 's'}` : ''
+    }`
     setState((s) => ({
       ...s,
-      floor: { imageDataUrl: scan.imageDataUrl, width: FW, height: FH, metresWide },
+      floor: { imageDataUrl, width: FW, height: FH, metresWide },
       zones,
-      items: [],
+      items,
+      history: [{ id: newId(), at: new Date().toISOString(), kind: 'scan', text: summary }],
     }))
-    setSelectedId(null)
-    setScan(null)
+  }
+
+  function logEvent(kind: MoveKind, text: string) {
+    setState((s) => ({
+      ...s,
+      history: [
+        { id: newId(), at: new Date().toISOString(), kind, text },
+        ...(s.history ?? []),
+      ].slice(0, 60),
+    }))
+  }
+
+  function moveEnd(id: string) {
+    const it = state.items.find((i) => i.id === id)
+    if (!it) return
+    const z = zoneOf(it, state.zones)
+    logEvent('move', z ? `Moved ${it.name} into ${z.name}` : `Moved ${it.name}`)
   }
 
   function moveItem(id: string, x: number, y: number) {
@@ -197,16 +249,22 @@ export default function App() {
 
   function patchSelected(patch: Partial<FloorItem>) {
     if (!selectedId) return
+    const prev = state.items.find((i) => i.id === selectedId)
     setState((s) => ({
       ...s,
       items: s.items.map((i) => (i.id === selectedId ? { ...i, ...patch } : i)),
     }))
+    if (prev && patch.status && patch.status !== prev.status) {
+      logEvent('status', `${prev.name}: ${STATUS_LABELS[prev.status]} → ${STATUS_LABELS[patch.status]}`)
+    }
   }
 
   function deleteSelected() {
     if (!selectedId) return
+    const name = state.items.find((i) => i.id === selectedId)?.name ?? 'item'
     setState((s) => ({ ...s, items: s.items.filter((i) => i.id !== selectedId) }))
     setSelectedId(null)
+    logEvent('remove', `Removed ${name}`)
   }
 
   function loadScenario(key: string) {
@@ -271,6 +329,7 @@ export default function App() {
       if (k < 1) requestAnimationFrame(tick)
     }
     requestAnimationFrame(tick)
+    logEvent('optimise', 'Optimised layout')
   }
 
   function importState(text: string) {
@@ -330,6 +389,7 @@ export default function App() {
               selectedId={selectedId}
               onSelect={setSelectedId}
               onMoveItem={moveItem}
+              onMoveEnd={moveEnd}
             />
           </Suspense>
           <div className="canvas-hint">

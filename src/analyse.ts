@@ -1,5 +1,5 @@
 import type { FloorItem, WorkshopState, Zone } from './types'
-import { dueLabel, dueState } from './manager'
+import { dueLabel, dueState, zoneOccupancy } from './manager'
 
 // A lightweight, real heuristic analysis of a layout. It computes genuine
 // geometry (overlaps, which zone each item sits in, aisle obstructions) and
@@ -150,6 +150,17 @@ export function analyse(state: WorkshopState): Analysis {
         severity: 'warn',
         message: `${item.name} is due today.`,
         itemId: item.id,
+      })
+    }
+  }
+
+  // --- Over-capacity zones. ---
+  for (const load of zoneOccupancy(state)) {
+    if (load.over) {
+      insights.push({
+        id: `cap-${load.zone.id}`,
+        severity: 'warn',
+        message: `${load.zone.name} is over capacity (${load.count} items) — spread the load.`,
       })
     }
   }

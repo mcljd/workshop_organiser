@@ -3,7 +3,7 @@ import type { Building, BuildingScan } from '../buildings'
 
 interface Props {
   scan: BuildingScan
-  onConfirm: (buildings: Building[], metresWide: number) => void
+  onConfirm: (buildings: Building[], metresWide: number, alsoObjects: boolean) => void
   onCancel: () => void
 }
 
@@ -15,6 +15,7 @@ interface Props {
 export function BuildingReview({ scan, onConfirm, onCancel }: Props) {
   const [buildings, setBuildings] = useState<Building[]>(scan.buildings)
   const [metres, setMetres] = useState(60)
+  const [alsoObjects, setAlsoObjects] = useState(true)
   const svgRef = useRef<SVGSVGElement | null>(null)
   const draw = useRef<{ x: number; y: number } | null>(null)
   const [draft, setDraft] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
@@ -167,16 +168,26 @@ export function BuildingReview({ scan, onConfirm, onCancel }: Props) {
         </div>
 
         <div className="review-foot">
-          <label className="review-scale">
-            Site width
-            <input
-              type="number"
-              min={5}
-              value={metres}
-              onChange={(e) => setMetres(Number(e.target.value) || 60)}
-            />
-            m
-          </label>
+          <div className="review-foot-opts">
+            <label className="review-scale">
+              Site width
+              <input
+                type="number"
+                min={5}
+                value={metres}
+                onChange={(e) => setMetres(Number(e.target.value) || 60)}
+              />
+              m
+            </label>
+            <label className="review-check">
+              <input
+                type="checkbox"
+                checked={alsoObjects}
+                onChange={(e) => setAlsoObjects(e.target.checked)}
+              />
+              Also find boats/vehicles (AI)
+            </label>
+          </div>
           <div className="review-foot-actions">
             <button className="ghost" onClick={onCancel}>
               Cancel
@@ -184,7 +195,7 @@ export function BuildingReview({ scan, onConfirm, onCancel }: Props) {
             <button
               className="primary"
               disabled={keptCount === 0}
-              onClick={() => onConfirm(buildings, metres)}
+              onClick={() => onConfirm(buildings, metres, alsoObjects)}
             >
               Use {keptCount} building{keptCount === 1 ? '' : 's'}
             </button>

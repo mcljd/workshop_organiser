@@ -1058,6 +1058,110 @@ button.danger:hover {
   color: var(--muted);
 }
 
+/* ---- Sheds / capacity ---- */
+.sheds,
+.timeline {
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.sheds h4,
+.timeline h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.shed-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.shed-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shed-count {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  width: 18px;
+  text-align: right;
+}
+
+.shed-bar {
+  width: 80px;
+  height: 7px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.shed-bar span {
+  display: block;
+  height: 100%;
+  background: #22c55e;
+}
+
+.shed-bar.over span {
+  background: #ef4444;
+}
+
+.shed-warn {
+  color: #dc2626;
+}
+
+/* ---- Timeline ---- */
+.timeline ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.tl {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text);
+  align-items: baseline;
+}
+
+.tl-time {
+  color: var(--muted);
+  width: 34px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.review-foot-opts {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.review-check {
+  font-size: 13px;
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 /* ---- Optimise button ---- */
 .optimise-btn {
   width: 100%;

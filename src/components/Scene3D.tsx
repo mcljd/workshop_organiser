@@ -13,6 +13,7 @@ interface Props {
   selectedId: string | null
   onSelect: (id: string | null) => void
   onMoveItem: (id: string, x: number, y: number) => void
+  onMoveEnd?: (id: string) => void
 }
 
 /**
@@ -20,7 +21,15 @@ interface Props {
  * y: 0..floor.height) map to scene coordinates centred on the origin:
  * sceneX = worldX - W/2, sceneZ = worldY - H/2, with Y as height.
  */
-export function Scene3D({ floor, zones, items, selectedId, onSelect, onMoveItem }: Props) {
+export function Scene3D({
+  floor,
+  zones,
+  items,
+  selectedId,
+  onSelect,
+  onMoveItem,
+  onMoveEnd,
+}: Props) {
   const W = floor.width
   const H = floor.height
   const [dragging, setDragging] = useState<string | null>(null)
@@ -44,10 +53,13 @@ export function Scene3D({ floor, zones, items, selectedId, onSelect, onMoveItem 
 
   useEffect(() => {
     if (!dragging) return
-    const end = () => setDragging(null)
+    const end = () => {
+      onMoveEnd?.(dragging)
+      setDragging(null)
+    }
     window.addEventListener('pointerup', end)
     return () => window.removeEventListener('pointerup', end)
-  }, [dragging])
+  }, [dragging, onMoveEnd])
 
   const camStart: [number, number, number] = [0, Math.max(W, H) * 0.7, H * 0.95]
 

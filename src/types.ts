@@ -54,6 +54,15 @@ export interface FloorPlan {
   metresWide?: number
 }
 
+export type MoveKind = 'move' | 'status' | 'add' | 'remove' | 'optimise' | 'scan'
+
+export interface MoveEvent {
+  id: string
+  at: string // ISO timestamp
+  kind: MoveKind
+  text: string
+}
+
 export interface WorkshopState {
   /** Schema version so we can migrate saved layouts. */
   version: 2
@@ -61,6 +70,8 @@ export interface WorkshopState {
   floor: FloorPlan
   zones: Zone[]
   items: FloorItem[]
+  /** Activity log — foundation for workflow analytics and the camera stage. */
+  history?: MoveEvent[]
 }
 
 export const STATUS_LABELS: Record<ItemStatus, string> = {

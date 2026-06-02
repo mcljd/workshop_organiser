@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { WorkshopState } from '../types'
 import { STATUS_COLORS, STATUS_LABELS } from '../types'
-import { dueLabel, dueState, dwellDays, isFixture, managerKPIs } from '../manager'
+import { dueLabel, dueState, dwellDays, isFixture, managerKPIs, zoneOccupancy } from '../manager'
 
 interface Props {
   state: WorkshopState
@@ -17,6 +17,8 @@ export function ManagerPanel({ state, selectedId, onSelect }: Props) {
   const [sort, setSort] = useState<SortKey>('due')
 
   const kpis = useMemo(() => managerKPIs(state), [state])
+  const loads = useMemo(() => zoneOccupancy(state), [state])
+  const history = state.history ?? []
 
   const jobs = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -97,8 +99,46 @@ export function ManagerPanel({ state, selectedId, onSelect }: Props) {
         })}
         {jobs.length === 0 && <li className="muted job-empty">No matching jobs.</li>}
       </ul>
+
+      {loads.length > 0 && (
+        <div className="sheds">
+          <h4>Capacity</h4>
+          {loads.map((l) => (
+            <div key={l.zone.id} className="shed-row">
+              <span className="shed-name">{l.zone.name}</span>
+              <span className="shed-count">{l.count}</span>
+              <span className={`shed-bar ${l.over ? 'over' : ''}`}>
+                <span style={{ width: `${Math.min(100, Math.round(l.fill * 100))}%` }} />
+              </span>
+              {l.over && <span className="shed-warn" title="Over capacity">⚠</span>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {history.length > 0 && (
+        <div className="timeline">
+          <h4>Activity</h4>
+          <ul>
+            {history.slice(0, 12).map((e) => (
+              <li key={e.id} className={`tl tl-${e.kind}`}>
+                <span className="tl-time">{timeAgo(e.at)}</span>
+                <span>{e.text}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   )
+}
+
+function timeAgo(iso: string): string {
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
+  if (s < 60) return 'now'
+  if (s < 3600) return `${Math.floor(s / 60)}m`
+  if (s < 86400) return `${Math.floor(s / 3600)}h`
+  return `${Math.floor(s / 86400)}d`
 }
 
 function Kpi({ label, value, tone }: { label: string; value: number; tone?: 'good' | 'warn' | 'bad' }) {
