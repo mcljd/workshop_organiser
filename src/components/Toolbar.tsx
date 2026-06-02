@@ -11,6 +11,7 @@ interface Props {
   onNewFromSpace: () => void
   onScanAerial: (dataUrl: string) => void
   onFindObjects: (dataUrl: string) => void
+  onSmartFind: () => void
   onEditZones: () => void
   onDetect: () => void
   hasPlan: boolean
@@ -28,6 +29,7 @@ export function Toolbar({
   onNewFromSpace,
   onScanAerial,
   onFindObjects,
+  onSmartFind,
   onEditZones,
   onDetect,
   hasPlan,
@@ -118,6 +120,9 @@ export function Toolbar({
         </button>
         <button className="ghost" onClick={() => objectsInput.current?.click()} title="Use the AI model to find boats and vehicles in a photo">
           🧠 Find objects
+        </button>
+        <button className="ghost" onClick={onSmartFind} title="Type what to look for — a zero-shot AI model finds it in a photo">
+          🔎 Smart find
         </button>
         {hasPlan && (
           <button className="ghost" onClick={onDetect} title="Re-read the floor plan and add detected doors and objects">

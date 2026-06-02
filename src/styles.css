@@ -1162,6 +1162,28 @@ button.danger:hover {
   color: var(--muted);
 }
 
+/* ---- Smart find suggestions ---- */
+.suggest-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -8px 0 16px;
+}
+
+.suggest {
+  background: #f1f5f9;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.suggest:hover {
+  background: #e0e7ff;
+  border-color: #c7d2fe;
+}
+
 /* ---- Tags ---- */
 .tag-edit {
   display: flex;

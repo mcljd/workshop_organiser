@@ -7,6 +7,8 @@ import { Onboarding } from './components/Onboarding'
 import { BuildingReview } from './components/BuildingReview'
 import { ZoneEditor } from './components/ZoneEditor'
 import { AddItemDialog } from './components/AddItemDialog'
+import { SmartFindDialog } from './components/SmartFindDialog'
+import { smartFind } from './smartFind'
 import { analyse } from './analyse'
 import { optimiseLayout } from './optimise'
 import { analyzeFloorPlan } from './vision'
@@ -39,6 +41,7 @@ export default function App() {
   const [scan, setScan] = useState<BuildingScan | null>(null)
   const [showAdd, setShowAdd] = useState(false)
   const [showZones, setShowZones] = useState(false)
+  const [showSmart, setShowSmart] = useState(false)
   const [aiBusy, setAiBusy] = useState<string | null>(null)
 
   // Auto-save on every change (debounced a touch to avoid thrashing storage).
@@ -337,6 +340,38 @@ export default function App() {
     logEvent('optimise', 'Optimised layout')
   }
 
+  async function runSmartFind(dataUrl: string, labels: string[]) {
+    setShowSmart(false)
+    setAiBusy('Loading smart model & searching… (first run downloads it)')
+    try {
+      const res = await smartFind(dataUrl, labels)
+      if (res.objects.length === 0) {
+        alert('The model ran but found none of those things in the photo. Try different words.')
+        return
+      }
+      const { width: FW, height: FH } = state.floor
+      const now = new Date().toISOString()
+      const found = res.objects.map((o) => ({
+        id: newId(),
+        name: o.label.replace(/^./, (c) => c.toUpperCase()),
+        x: o.cx * FW,
+        y: o.cy * FH,
+        width: Math.max(40, o.w * FW),
+        height: Math.max(28, o.h * FH),
+        rotation: 0,
+        status: 'incoming' as const,
+        shape: o.shape,
+        arrivedAt: now,
+      }))
+      setState((s) => ({ ...s, items: [...s.items, ...found] }))
+      logEvent('scan', `Smart find added ${found.length} item${found.length === 1 ? '' : 's'}`)
+    } catch {
+      alert('Could not load the smart model. It downloads on first use, so this needs internet.')
+    } finally {
+      setAiBusy(null)
+    }
+  }
+
   function importState(text: string) {
     const imported = parseImportedState(text)
     if (!imported) {
@@ -369,6 +404,7 @@ export default function App() {
         onNewFromSpace={() => setShowWizard(true)}
         onScanAerial={scanAerial}
         onFindObjects={findObjectsAI}
+        onSmartFind={() => setShowSmart(true)}
         onEditZones={() => setShowZones(true)}
         onDetect={detectFromPlan}
         hasPlan={!!state.floor.imageDataUrl}
@@ -449,6 +485,7 @@ export default function App() {
           onClose={() => setShowAdd(false)}
         />
       )}
+      {showSmart && <SmartFindDialog onRun={runSmartFind} onClose={() => setShowSmart(false)} />}
     </div>
   )
 }

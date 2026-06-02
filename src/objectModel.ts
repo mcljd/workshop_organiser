@@ -39,7 +39,8 @@ async function getModel() {
       const tf = await import('@tensorflow/tfjs')
       await tf.ready()
       const cocoSsd = await import('@tensorflow-models/coco-ssd')
-      return cocoSsd.load({ base: 'lite_mobilenet_v2' })
+      // Full mobilenet_v2 base — more accurate than the lite variant.
+      return cocoSsd.load({ base: 'mobilenet_v2' })
     })()
   }
   return modelPromise
