@@ -17,12 +17,18 @@ coming in and out and you need an at-a-glance map of what's where.
 3. **Live tracking.** Connect existing cameras to track real movement, measure
    efficiency, and surface where the workflow could be smoother.
 
-## What works today (v0.1)
+## What works today (v0.2 — interactive 3D demo)
 
-- Upload a floor-plan image (or use the blank grid).
-- Add items ("boats") and **drag** them around the floor.
-- **Zoom** (scroll) and **pan** (drag empty space).
-- Edit each item: name, status, size, rotation, notes.
+- **3D workshop** you can orbit, zoom and pan around (Three.js).
+- **Onboarding wizard**: upload a floor plan + photos, answer a few questions,
+  and it **builds your 3D view**. Uploaded floor plans become the textured 3D
+  floor.
+- Realistic **pre-built demos**: Boatyard (Redbay-style), Car Garage, Warehouse.
+- **Drag** boat-hull / vehicle items around the floor; **click** to edit name,
+  status, size, rotation, notes.
+- Named **zones** (dry dock, paint bay, slipway, aisles…).
+- **Live "AI" efficiency panel**: a score + ranked, clickable insights
+  (overlaps, blocked aisles, ready-to-launch) that update as you rearrange.
 - Colour-coded status: incoming / in progress / ready / blocked.
 - **Auto-saves** to your browser. Export / import a layout as JSON.
 

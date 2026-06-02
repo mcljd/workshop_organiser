@@ -4,6 +4,8 @@
 
 export type ItemStatus = 'incoming' | 'in_progress' | 'ready' | 'blocked'
 
+export type ItemShape = 'boat' | 'box'
+
 export interface FloorItem {
   id: string
   /** Human label, e.g. a boat name or job number. */
@@ -17,7 +19,25 @@ export interface FloorItem {
   /** Rotation in degrees, clockwise. */
   rotation: number
   status: ItemStatus
+  /** How the item is drawn on the floor. */
+  shape: ItemShape
   notes?: string
+}
+
+/** A named area of the floor: dry dock, paint bay, slipway, aisle… */
+export interface Zone {
+  id: string
+  name: string
+  x: number
+  y: number
+  width: number
+  height: number
+  /** Base colour for the zone fill/label. */
+  color: string
+  /** Marks circulation space the AI flags when something parks in it. */
+  isAisle?: boolean
+  /** Marks the launch/exit area (boats should leave from here). */
+  isExit?: boolean
 }
 
 export interface FloorPlan {
@@ -29,10 +49,11 @@ export interface FloorPlan {
 }
 
 export interface WorkshopState {
-  /** Schema version so we can migrate saved layouts later. */
-  version: 1
+  /** Schema version so we can migrate saved layouts. */
+  version: 2
   name: string
   floor: FloorPlan
+  zones: Zone[]
   items: FloorItem[]
 }
 

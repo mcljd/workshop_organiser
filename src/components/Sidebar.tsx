@@ -1,5 +1,5 @@
 import type { FloorItem, ItemStatus } from '../types'
-import { STATUS_COLORS, STATUS_LABELS } from '../types'
+import { STATUS_LABELS } from '../types'
 
 interface Props {
   item: FloorItem | null
@@ -10,26 +10,22 @@ interface Props {
 
 const STATUSES: ItemStatus[] = ['incoming', 'in_progress', 'ready', 'blocked']
 
-/** Right-hand panel for editing the currently selected item. */
+/** Edit panel for the currently selected item. */
 export function Sidebar({ item, itemCount, onChange, onDelete }: Props) {
   if (!item) {
     return (
-      <aside className="sidebar">
-        <h2>Details</h2>
+      <div className="sidebar-empty">
         <p className="muted">
           {itemCount === 0
-            ? 'No items yet. Use “Add boat” to place one.'
-            : 'Select an item on the floor to edit it.'}
+            ? 'No items yet. Use “Add item” to place one.'
+            : 'Click an item in the 3D view to edit it.'}
         </p>
-        <Legend />
-      </aside>
+      </div>
     )
   }
 
   return (
-    <aside className="sidebar">
-      <h2>Details</h2>
-
+    <div className="sidebar-edit">
       <label className="field">
         <span>Name</span>
         <input
@@ -98,22 +94,6 @@ export function Sidebar({ item, itemCount, onChange, onDelete }: Props) {
       <button className="danger" onClick={onDelete}>
         Delete item
       </button>
-
-      <Legend />
-    </aside>
-  )
-}
-
-function Legend() {
-  return (
-    <div className="legend">
-      <h3>Status key</h3>
-      {(Object.keys(STATUS_LABELS) as ItemStatus[]).map((s) => (
-        <div key={s} className="legend-row">
-          <span className="swatch" style={{ background: STATUS_COLORS[s] }} />
-          {STATUS_LABELS[s]}
-        </div>
-      ))}
     </div>
   )
 }

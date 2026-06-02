@@ -1,40 +1,10 @@
 import type { WorkshopState } from './types'
+import { defaultScenario } from './scenarios'
 
-const STORAGE_KEY = 'workshop-organiser:state'
+const STORAGE_KEY = 'workshop-organiser:state:v2'
 
 export function createDefaultState(): WorkshopState {
-  return {
-    version: 1,
-    name: 'My Workshop',
-    floor: {
-      imageDataUrl: null,
-      width: 1200,
-      height: 800,
-    },
-    items: [
-      // A couple of starter items so the canvas isn't empty on first run.
-      makeStarterItem('Boat 1', 200, 200, 'incoming'),
-      makeStarterItem('Boat 2', 520, 300, 'in_progress'),
-    ],
-  }
-}
-
-function makeStarterItem(
-  name: string,
-  x: number,
-  y: number,
-  status: WorkshopState['items'][number]['status'],
-): WorkshopState['items'][number] {
-  return {
-    id: newId(),
-    name,
-    x,
-    y,
-    width: 180,
-    height: 70,
-    rotation: 0,
-    status,
-  }
+  return defaultScenario()
 }
 
 export function newId(): string {
@@ -46,11 +16,14 @@ export function loadState(): WorkshopState {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return createDefaultState()
     const parsed = JSON.parse(raw) as WorkshopState
-    if (parsed && parsed.version === 1 && Array.isArray(parsed.items)) {
+    if (parsed && parsed.version === 2 && Array.isArray(parsed.items)) {
+      // Backfill anything an older save might be missing.
+      parsed.zones ??= []
+      for (const item of parsed.items) item.shape ??= 'box'
       return parsed
     }
   } catch {
-    // Corrupt or incompatible saved data — fall back to a clean state.
+    // Corrupt or incompatible saved data — fall back to a clean demo.
   }
   return createDefaultState()
 }
@@ -59,7 +32,7 @@ export function saveState(state: WorkshopState): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
   } catch {
-    // Storage full or unavailable (e.g. large floor-plan image) — ignore.
+    // Storage full or unavailable — ignore.
   }
 }
 
@@ -78,7 +51,9 @@ export function exportState(state: WorkshopState): void {
 export function parseImportedState(text: string): WorkshopState | null {
   try {
     const parsed = JSON.parse(text) as WorkshopState
-    if (parsed && parsed.version === 1 && Array.isArray(parsed.items)) {
+    if (parsed && parsed.version === 2 && Array.isArray(parsed.items)) {
+      parsed.zones ??= []
+      for (const item of parsed.items) item.shape ??= 'box'
       return parsed
     }
   } catch {

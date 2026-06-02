@@ -1,42 +1,31 @@
 import { useRef } from 'react'
 import type { ItemStatus } from '../types'
 import { STATUS_COLORS, STATUS_LABELS } from '../types'
+import { SCENARIOS } from '../scenarios'
 
 interface Props {
   workshopName: string
   onRename: (name: string) => void
   onAddItem: () => void
-  onUploadFloorPlan: (dataUrl: string) => void
-  onClearFloorPlan: () => void
-  hasFloorPlan: boolean
+  onLoadScenario: (key: string) => void
+  onNewFromSpace: () => void
   onExport: () => void
   onImport: (text: string) => void
   counts: Record<ItemStatus, number>
-  total: number
 }
 
-/** Top bar: workshop name plus the main actions. */
+/** Top bar: brand, workshop name, demo switcher, and the main actions. */
 export function Toolbar({
   workshopName,
   onRename,
   onAddItem,
-  onUploadFloorPlan,
-  onClearFloorPlan,
-  hasFloorPlan,
+  onLoadScenario,
+  onNewFromSpace,
   onExport,
   onImport,
   counts,
-  total,
 }: Props) {
-  const planInput = useRef<HTMLInputElement | null>(null)
   const importInput = useRef<HTMLInputElement | null>(null)
-
-  function handlePlanFile(file: File | undefined) {
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => onUploadFloorPlan(String(reader.result))
-    reader.readAsDataURL(file)
-  }
 
   function handleImportFile(file: File | undefined) {
     if (!file) return
@@ -49,17 +38,20 @@ export function Toolbar({
     <header className="toolbar">
       <div className="brand">
         <span className="logo" aria-hidden>
-          ▦
+          ◳
         </span>
-        <input
-          className="workshop-name"
-          value={workshopName}
-          onChange={(e) => onRename(e.target.value)}
-          aria-label="Workshop name"
-        />
+        <div className="brand-text">
+          <input
+            className="workshop-name"
+            value={workshopName}
+            onChange={(e) => onRename(e.target.value)}
+            aria-label="Workshop name"
+          />
+          <span className="brand-sub">Workshop Organiser · live demo</span>
+        </div>
       </div>
 
-      <div className="summary" title={`${total} item${total === 1 ? '' : 's'}`}>
+      <div className="summary">
         {(Object.keys(STATUS_LABELS) as ItemStatus[]).map((s) => (
           <span key={s} className="summary-chip">
             <span className="swatch" style={{ background: STATUS_COLORS[s] }} />
@@ -69,16 +61,30 @@ export function Toolbar({
       </div>
 
       <div className="actions">
-        <button onClick={onAddItem}>+ Add boat</button>
+        <label className="scenario-select">
+          <span>Demo</span>
+          <select
+            defaultValue=""
+            onChange={(e) => {
+              if (e.target.value) onLoadScenario(e.target.value)
+              e.target.value = ''
+            }}
+          >
+            <option value="" disabled>
+              Load…
+            </option>
+            {SCENARIOS.map((s) => (
+              <option key={s.key} value={s.key}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </label>
 
-        <button onClick={() => planInput.current?.click()}>
-          {hasFloorPlan ? 'Replace floor plan' : 'Upload floor plan'}
+        <button onClick={onAddItem}>+ Add item</button>
+        <button className="accent" onClick={onNewFromSpace}>
+          ✦ Build from my space
         </button>
-        {hasFloorPlan && (
-          <button className="ghost" onClick={onClearFloorPlan}>
-            Remove plan
-          </button>
-        )}
 
         <span className="divider" />
 
@@ -90,16 +96,6 @@ export function Toolbar({
         </button>
       </div>
 
-      <input
-        ref={planInput}
-        type="file"
-        accept="image/*"
-        hidden
-        onChange={(e) => {
-          handlePlanFile(e.target.files?.[0])
-          e.target.value = ''
-        }}
-      />
       <input
         ref={importInput}
         type="file"

@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
-import { FloorCanvas } from './components/FloorCanvas'
+import { Scene3D } from './components/Scene3D'
 import { Sidebar } from './components/Sidebar'
 import { Toolbar } from './components/Toolbar'
+import { InsightsPanel } from './components/InsightsPanel'
+import { Onboarding } from './components/Onboarding'
+import { analyse } from './analyse'
+import { SCENARIOS } from './scenarios'
 import type { FloorItem, ItemStatus, WorkshopState } from './types'
 import {
-  createDefaultState,
   exportState,
   loadState,
   newId,
@@ -12,9 +15,12 @@ import {
   saveState,
 } from './storage'
 
+const SEEN_KEY = 'workshop-organiser:onboarded'
+
 export default function App() {
   const [state, setState] = useState<WorkshopState>(() => loadState())
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [showWizard, setShowWizard] = useState(() => !localStorage.getItem(SEEN_KEY))
 
   // Auto-save on every change (debounced a touch to avoid thrashing storage).
   useEffect(() => {
@@ -22,8 +28,7 @@ export default function App() {
     return () => clearTimeout(t)
   }, [state])
 
-  // Keyboard shortcuts: Delete removes the selected item, Escape deselects.
-  // Ignored while typing in an input so editing names/notes is unaffected.
+  // Keyboard: Delete removes the selected item, Escape deselects.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement).tagName
@@ -44,6 +49,8 @@ export default function App() {
     [state.items, selectedId],
   )
 
+  const analysis = useMemo(() => analyse(state), [state])
+
   const counts = useMemo(() => {
     const base: Record<ItemStatus, number> = {
       incoming: 0,
@@ -55,25 +62,21 @@ export default function App() {
     return base
   }, [state.items])
 
-  function addItemAt(x: number, y: number) {
+  function addItem() {
+    const isBoat = state.items.some((i) => i.shape === 'boat')
     const item: FloorItem = {
       id: newId(),
-      name: `Boat ${state.items.length + 1}`,
-      x,
-      y,
-      width: 180,
-      height: 70,
+      name: `${isBoat ? 'Boat' : 'Item'} ${state.items.length + 1}`,
+      x: state.floor.width * 0.5,
+      y: state.floor.height * 0.5,
+      width: isBoat ? 200 : 150,
+      height: isBoat ? 78 : 90,
       rotation: 0,
       status: 'incoming',
+      shape: isBoat ? 'boat' : 'box',
     }
     setState((s) => ({ ...s, items: [...s.items, item] }))
     setSelectedId(item.id)
-  }
-
-  // Toolbar "Add boat" drops one near the top-left; double-click drops at the
-  // cursor (see FloorCanvas).
-  function addItem() {
-    addItemAt(state.floor.width * 0.2, state.floor.height * 0.2)
   }
 
   function moveItem(id: string, x: number, y: number) {
@@ -97,8 +100,11 @@ export default function App() {
     setSelectedId(null)
   }
 
-  function setFloorPlan(dataUrl: string | null) {
-    setState((s) => ({ ...s, floor: { ...s.floor, imageDataUrl: dataUrl } }))
+  function loadScenario(key: string) {
+    const scenario = SCENARIOS.find((s) => s.key === key)
+    if (!scenario) return
+    setState(scenario.build())
+    setSelectedId(null)
   }
 
   function importState(text: string) {
@@ -111,11 +117,16 @@ export default function App() {
     setSelectedId(null)
   }
 
-  function resetAll() {
-    if (confirm('Start a new, empty workshop? Your current layout will be cleared.')) {
-      setState(createDefaultState())
-      setSelectedId(null)
-    }
+  function finishWizard(built: WorkshopState) {
+    localStorage.setItem(SEEN_KEY, '1')
+    setState(built)
+    setSelectedId(null)
+    setShowWizard(false)
+  }
+
+  function closeWizard() {
+    localStorage.setItem(SEEN_KEY, '1')
+    setShowWizard(false)
   }
 
   return (
@@ -124,41 +135,42 @@ export default function App() {
         workshopName={state.name}
         onRename={(name) => setState((s) => ({ ...s, name }))}
         onAddItem={addItem}
-        onUploadFloorPlan={(dataUrl) => setFloorPlan(dataUrl)}
-        onClearFloorPlan={() => setFloorPlan(null)}
-        hasFloorPlan={!!state.floor.imageDataUrl}
+        onLoadScenario={loadScenario}
+        onNewFromSpace={() => setShowWizard(true)}
         onExport={() => exportState(state)}
         onImport={importState}
         counts={counts}
-        total={state.items.length}
       />
 
       <main className="workspace">
         <div className="canvas-wrap">
-          <FloorCanvas
+          <Scene3D
             floor={state.floor}
+            zones={state.zones}
             items={state.items}
             selectedId={selectedId}
             onSelect={setSelectedId}
             onMoveItem={moveItem}
-            onAddAt={addItemAt}
           />
           <div className="canvas-hint">
-            Drag to move • Double-click to add • Scroll to zoom • Drag empty space to
-            pan • Del to remove
-            <button className="link" onClick={resetAll}>
-              New workshop
-            </button>
+            Drag items to move • Drag empty space to orbit • Scroll to zoom • Del to remove
           </div>
         </div>
 
-        <Sidebar
-          item={selectedItem}
-          itemCount={state.items.length}
-          onChange={patchSelected}
-          onDelete={deleteSelected}
-        />
+        <aside className="panel">
+          <InsightsPanel analysis={analysis} onSelectItem={setSelectedId} />
+          <div className="panel-divider" />
+          <h3 className="panel-h">Details</h3>
+          <Sidebar
+            item={selectedItem}
+            itemCount={state.items.length}
+            onChange={patchSelected}
+            onDelete={deleteSelected}
+          />
+        </aside>
       </main>
+
+      {showWizard && <Onboarding onClose={closeWizard} onBuild={finishWizard} />}
     </div>
   )
 }
