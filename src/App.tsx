@@ -1,4 +1,12 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  createSite,
+  loadSite,
+  saveSite,
+  siteIdFromUrl,
+  subscribeSite,
+  unsubscribe,
+} from './cloud'
 import { Sidebar } from './components/Sidebar'
 import { Toolbar } from './components/Toolbar'
 import { InsightsPanel } from './components/InsightsPanel'
@@ -58,12 +66,48 @@ export default function App() {
   const [smartMode, setSmartMode] = useState<'objects' | 'buildings' | 'everything' | null>(null)
   const [pendingObjects, setPendingObjects] = useState<FoundObject[]>([])
   const [aiBusy, setAiBusy] = useState<string | null>(null)
+  const [liveId, setLiveId] = useState<string | null>(null)
+  const applyingRemote = useRef(false)
+  const suppressEcho = useRef(0)
+  const liveChannel = useRef<ReturnType<typeof subscribeSite> | null>(null)
 
-  // Auto-save on every change (debounced a touch to avoid thrashing storage).
+  // Auto-save on every change (debounced). Also push to the cloud when live —
+  // unless this change came *from* a remote update (avoids an echo loop).
   useEffect(() => {
-    const t = setTimeout(() => saveState(state), 300)
+    const t = setTimeout(() => {
+      saveState(state)
+      if (liveId && !applyingRemote.current) {
+        suppressEcho.current = Date.now() + 1500
+        saveSite(liveId, state).catch(() => {})
+      }
+      applyingRemote.current = false
+    }, 300)
     return () => clearTimeout(t)
-  }, [state])
+  }, [state, liveId])
+
+  // On load, if the URL points at a live site, join it and stream updates.
+  useEffect(() => {
+    const id = siteIdFromUrl()
+    if (!id) return
+    let channel: ReturnType<typeof subscribeSite> | null = null
+    ;(async () => {
+      const remote = await loadSite(id)
+      if (remote) {
+        applyingRemote.current = true
+        setState(remote)
+        setLiveId(id)
+        setShowWizard(false)
+        channel = subscribeSite(id, (s) => {
+          if (Date.now() < suppressEcho.current) return // our own echo
+          applyingRemote.current = true
+          setState(s)
+        })
+      }
+    })()
+    return () => {
+      if (channel) unsubscribe(channel)
+    }
+  }, [])
 
   // Keyboard: Delete removes the selected item, Escape deselects, arrow keys
   // nudge it (Shift = larger steps) — so the floor is usable without a mouse.
@@ -468,6 +512,32 @@ export default function App() {
     }
   }
 
+  async function goLive() {
+    if (liveId) return
+    setAiBusy('Creating your live site…')
+    try {
+      const id = await createSite(state)
+      const url = new URL(window.location.href)
+      url.searchParams.set('site', id)
+      window.history.replaceState({}, '', url)
+      setLiveId(id)
+      liveChannel.current = subscribeSite(id, (s) => {
+        if (Date.now() < suppressEcho.current) return
+        applyingRemote.current = true
+        setState(s)
+      })
+      logEvent('edit', 'Went live — sharing this site')
+    } catch {
+      alert('Could not create a live site. Check your connection and try again.')
+    } finally {
+      setAiBusy(null)
+    }
+  }
+
+  function copyLink() {
+    navigator.clipboard?.writeText(window.location.href)
+  }
+
   function importState(text: string) {
     const imported = parseImportedState(text)
     if (!imported) {
@@ -509,6 +579,9 @@ export default function App() {
         onExport={() => exportState(state)}
         onImport={importState}
         counts={counts}
+        liveId={liveId}
+        onGoLive={goLive}
+        onCopyLink={copyLink}
       />
 
       <main className="workspace">

@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import type { ItemStatus } from '../types'
 import { STATUS_COLORS, STATUS_LABELS } from '../types'
 import { SCENARIOS } from '../scenarios'
@@ -20,6 +20,9 @@ interface Props {
   onExport: () => void
   onImport: (text: string) => void
   counts: Record<ItemStatus, number>
+  liveId: string | null
+  onGoLive: () => void
+  onCopyLink: () => void
 }
 
 /** Top bar: brand, workshop name, demo switcher, and the main actions. */
@@ -40,7 +43,11 @@ export function Toolbar({
   onExport,
   onImport,
   counts,
+  liveId,
+  onGoLive,
+  onCopyLink,
 }: Props) {
+  const [copied, setCopied] = useState(false)
   const importInput = useRef<HTMLInputElement | null>(null)
   const aerialInput = useRef<HTMLInputElement | null>(null)
   const phoneInput = useRef<HTMLInputElement | null>(null)
@@ -141,6 +148,24 @@ export function Toolbar({
         )}
 
         <span className="divider" />
+
+        {liveId ? (
+          <button
+            className="live-btn"
+            onClick={() => {
+              onCopyLink()
+              setCopied(true)
+              setTimeout(() => setCopied(false), 1500)
+            }}
+            title="This site is live — share this link"
+          >
+            <span className="live-dot" /> {copied ? 'Link copied!' : 'LIVE · Copy link'}
+          </button>
+        ) : (
+          <button className="accent" onClick={onGoLive} title="Publish a live, shareable link that updates in real time">
+            ⚡ Go live
+          </button>
+        )}
 
         <button className="ghost" onClick={onExport}>
           Export
