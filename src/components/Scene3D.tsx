@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber'
-import { Billboard, Grid, OrbitControls, RoundedBox, Text } from '@react-three/drei'
+import { Billboard, ContactShadows, GradientTexture, Grid, OrbitControls, RoundedBox, SoftShadows, Text } from '@react-three/drei'
 import * as THREE from 'three'
 import type { FloorItem, FloorPlan, Zone } from '../types'
 import { STATUS_COLORS } from '../types'
@@ -70,15 +70,27 @@ export function Scene3D({
     <Canvas
       shadows
       dpr={[1, 2]}
-      camera={{ position: camStart, fov: 42, near: 1, far: 8000 }}
+      gl={{ antialias: true }}
+      camera={{ position: camStart, fov: 42, near: 1, far: 12000 }}
       onPointerMissed={() => onSelect(null)}
     >
-      <color attach="background" args={['#dbeafe']} />
-      <fog attach="fog" args={['#dbeafe', Math.max(W, H) * 1.2, Math.max(W, H) * 3]} />
+      <SoftShadows size={28} samples={12} focus={0.85} />
+      <SkyDome W={W} H={H} />
+      <fog attach="fog" args={['#cfe0f5', Math.max(W, H) * 1.4, Math.max(W, H) * 3.2]} />
 
       <Lights W={W} H={H} />
 
       <Ground W={W} H={H} imageDataUrl={floor.imageDataUrl} />
+      {/* Soft grounding shadow for a premium look. */}
+      <ContactShadows
+        position={[0, 0.2, 0]}
+        scale={Math.max(W, H) * 1.8}
+        resolution={512}
+        blur={2.6}
+        opacity={0.26}
+        far={Math.max(W, H)}
+        color="#1e293b"
+      />
       <DragSurface enabled={!!dragging} W={W} H={H} onDrag={onDragTo} />
 
       {zones.map((z) => (
@@ -109,18 +121,34 @@ export function Scene3D({
   )
 }
 
+/** Gradient sky dome — deep blue overhead fading to pale at the horizon. */
+function SkyDome({ W, H }: { W: number; H: number }) {
+  const r = Math.max(W, H) * 4
+  return (
+    <mesh>
+      <sphereGeometry args={[r, 32, 16]} />
+      <meshBasicMaterial side={THREE.BackSide} fog={false} toneMapped={false}>
+        <GradientTexture attach="map" stops={[0, 0.5, 1]} colors={['#1e3a8a', '#5b9bf0', '#eaf3ff']} />
+      </meshBasicMaterial>
+    </mesh>
+  )
+}
+
 function Lights({ W, H }: { W: number; H: number }) {
   const size = Math.max(W, H)
   return (
     <>
-      <hemisphereLight args={['#ffffff', '#b6c2cf', 0.7]} />
-      <ambientLight intensity={0.35} />
+      <hemisphereLight args={['#eaf2ff', '#7d8a9c', 0.55]} />
+      <ambientLight intensity={0.22} />
+      {/* Warm key light with soft shadows. */}
       <directionalLight
-        position={[size * 0.4, size * 0.9, size * 0.3]}
-        intensity={1.5}
+        position={[size * 0.45, size * 0.95, size * 0.32]}
+        intensity={1.7}
+        color="#fff6e8"
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
+        shadow-bias={-0.0002}
         shadow-camera-left={-size}
         shadow-camera-right={size}
         shadow-camera-top={size}
@@ -128,6 +156,8 @@ function Lights({ W, H }: { W: number; H: number }) {
         shadow-camera-near={1}
         shadow-camera-far={size * 3}
       />
+      {/* Cool rim/fill from the opposite side — no shadow. */}
+      <directionalLight position={[-size * 0.5, size * 0.5, -size * 0.4]} intensity={0.5} color="#bcd4ff" />
     </>
   )
 }
@@ -166,13 +196,13 @@ function Ground({
         args={[W, H]}
         cellSize={40}
         cellThickness={0.6}
-        cellColor="#cbd5e1"
+        cellColor="#c7d2e8"
         sectionSize={200}
-        sectionThickness={1.1}
-        sectionColor="#94a3b8"
-        fadeDistance={Math.max(W, H) * 2.2}
-        fadeStrength={1}
-        infiniteGrid={false}
+        sectionThickness={1.2}
+        sectionColor="#6366f1"
+        fadeDistance={Math.max(W, H) * 2.4}
+        fadeStrength={1.2}
+        infiniteGrid
       />
     </group>
   )
@@ -315,7 +345,12 @@ function Item3D({
           <ringGeometry
             args={[Math.max(item.width, item.height) * 0.62, Math.max(item.width, item.height) * 0.7, 48]}
           />
-          <meshBasicMaterial color={selected ? '#0f172a' : '#64748b'} transparent opacity={0.9} />
+          <meshBasicMaterial
+            color={selected ? '#06b6d4' : '#94a3b8'}
+            transparent
+            opacity={0.95}
+            toneMapped={false}
+          />
         </mesh>
       )}
 
