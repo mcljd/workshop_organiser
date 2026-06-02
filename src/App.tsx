@@ -22,6 +22,7 @@ import { optimiseLayout } from './optimise'
 import { analyzeFloorPlan } from './vision'
 import { detectBuildings, recordFeedback, type Building, type BuildingScan } from './buildings'
 import { detectObjectsInPhoto } from './objectModel'
+import { readLabels } from './ocr'
 import { SCENARIOS } from './scenarios'
 import type { FloorItem, ItemStatus, MoveKind, WorkshopState } from './types'
 import { STATUS_LABELS } from './types'
@@ -417,6 +418,49 @@ export default function App() {
     logEvent('optimise', 'Optimised layout')
   }
 
+  // OCR: read the text labels on the current floor plan and name items from
+  // the drawing itself (free, on-device).
+  async function readPlanLabels() {
+    const img = state.floor.imageDataUrl
+    if (!img) {
+      alert('Open or scan a floor plan first, then read its labels.')
+      return
+    }
+    setAiBusy('Reading the text on your plan… (first run downloads the OCR engine)')
+    try {
+      const res = await readLabels(img)
+      if (res.labels.length === 0) {
+        alert('No clear text labels were found on this image.')
+        return
+      }
+      const { width: FW, height: FH, metresWide } = state.floor
+      const unitsPer = metresWide ? FW / metresWide : 0
+      const now = new Date().toISOString()
+      const items: FloorItem[] = res.labels.map((l) => {
+        const sized = unitsPer && l.lengthFt && l.widthFt
+        return {
+          id: newId(),
+          name: l.text,
+          x: l.cx * FW,
+          y: l.cy * FH,
+          width: sized ? Math.max(40, l.lengthFt! * unitsPer) : l.isBoat ? 180 : 110,
+          height: sized ? Math.max(28, l.widthFt! * unitsPer) : l.isBoat ? 70 : 90,
+          rotation: 0,
+          status: 'incoming' as const,
+          shape: l.isBoat ? ('boat' as const) : ('box' as const),
+          notes: l.lengthFt && l.widthFt ? `${l.lengthFt}×${l.widthFt} (from plan)` : undefined,
+          arrivedAt: now,
+        }
+      })
+      setState((s) => ({ ...s, items: [...s.items, ...items] }))
+      logEvent('scan', `Read ${items.length} label${items.length === 1 ? '' : 's'} from the plan`)
+    } catch {
+      alert('Could not load the OCR engine. It downloads on first use, so this needs internet.')
+    } finally {
+      setAiBusy(null)
+    }
+  }
+
   // Smart find for buildings: detect named structures, then route through the
   // same review/correct/learn screen as the classical scanner.
   async function runSmartScan(dataUrl: string, labels: string[]) {
@@ -602,6 +646,7 @@ export default function App() {
         onSmartScan={() => setSmartMode('buildings')}
         onScanEverything={() => setSmartMode('everything')}
         onEditZones={() => setShowZones(true)}
+        onReadLabels={readPlanLabels}
         onDetect={detectFromPlan}
         hasPlan={!!state.floor.imageDataUrl}
         onExport={() => exportState(state)}

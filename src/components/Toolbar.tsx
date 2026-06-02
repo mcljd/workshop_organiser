@@ -15,6 +15,7 @@ interface Props {
   onSmartScan: () => void
   onScanEverything: () => void
   onEditZones: () => void
+  onReadLabels: () => void
   onDetect: () => void
   hasPlan: boolean
   onExport: () => void
@@ -39,6 +40,7 @@ export function Toolbar({
   onSmartScan,
   onScanEverything,
   onEditZones,
+  onReadLabels,
   onDetect,
   hasPlan,
   onExport,
@@ -156,6 +158,11 @@ export function Toolbar({
         {hasPlan && (
           <button className="ghost" onClick={onDetect} title="Re-read the floor plan and add detected doors and objects">
             ⌖ Re-read plan
+          </button>
+        )}
+        {hasPlan && (
+          <button className="ghost" onClick={onReadLabels} title="Read the text labels on the plan and name items from the drawing">
+            🔤 Read labels
           </button>
         )}
 
